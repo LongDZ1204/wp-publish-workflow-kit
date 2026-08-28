@@ -16,7 +16,12 @@ thì chỉ nhận `content.rendered` (đã qua wpautop + shortcode expand — KH
 
 Basic Auth = base64(`user:app_password`). App Password có dấu cách trong chuỗi — **giữ nguyên dấu cách**.
 HTTP 401 = sai user/password hoặc site tắt Application Passwords. HTTP 403 = user không đủ quyền sửa
-bài đó (cần role Editor/Admin). HTTP 200 ở `context=edit` = auth OK.
+bài đó. Mặc định tạo user riêng role Editor; không dùng Administrator. Editor có `upload_files`,
+`edit_others_posts` và `edit_published_posts`, đủ cho NEW draft + AUDIT bài hiện có. HTTP 200 ở
+`context=edit` = auth OK.
+
+Chạy `workflows/wp-publish/scripts/wp_setup_credentials.py` để nhập password qua prompt ẩn, kiểm role
+và capability rồi lưu file local mode `0600`.
 
 ## `modified`, revision, `date`
 

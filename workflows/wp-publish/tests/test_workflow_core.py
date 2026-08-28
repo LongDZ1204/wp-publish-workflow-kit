@@ -21,6 +21,7 @@ state_mod = load("wp_state")
 learn = load("wp_learn")
 sheet_io = load("wp_sheet_io")
 scaffold_mod = load("wp_scaffold_project")
+credential_setup = load("wp_setup_credentials")
 
 
 class SheetContractTests(unittest.TestCase):
@@ -152,6 +153,33 @@ class ProjectScaffoldTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             with self.assertRaisesRegex(ValueError, "BRAND-MISSING"):
                 scaffold_mod.scaffold("missing-client", Path(td))
+
+
+class CredentialSetupTests(unittest.TestCase):
+    def test_https_and_kebab_case_are_required(self):
+        self.assertEqual(
+            credential_setup.validate_inputs("demo-site", "https://example.com/", "wp-publish"),
+            ("demo-site", "https://example.com", "wp-publish"),
+        )
+        with self.assertRaisesRegex(ValueError, "HTTPS"):
+            credential_setup.validate_inputs("demo-site", "http://example.com", "wp-publish")
+
+    def test_editor_capabilities_pass_and_admin_is_detected(self):
+        capabilities = {name: True for name in credential_setup.REQUIRED_CAPABILITIES}
+        editor = credential_setup.assess_user({"roles": ["editor"], "capabilities": capabilities})
+        self.assertFalse(editor["administrator"])
+        self.assertEqual(editor["missing_capabilities"], [])
+        admin = credential_setup.assess_user({"roles": ["administrator"], "capabilities": capabilities})
+        self.assertTrue(admin["administrator"])
+
+    def test_existing_credential_requires_explicit_replace(self):
+        old = "### demo WordPress (REST API)\n- URL: https://old.example\n- User: old\n- App Password: old\n"
+        new = credential_setup.credential_block("demo", "https://new.example", "new", "secret")
+        with self.assertRaisesRegex(ValueError, "--replace"):
+            credential_setup.update_text(old, "demo", new, replace=False)
+        replaced = credential_setup.update_text(old, "demo", new, replace=True)
+        self.assertIn("https://new.example", replaced)
+        self.assertNotIn("https://old.example", replaced)
 
 
 if __name__ == "__main__":

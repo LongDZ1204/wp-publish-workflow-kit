@@ -22,7 +22,15 @@ shortcodes, tables, embeds, and media references.
 
 ## Credentials
 
-Prefer temporary environment variables:
+Use a dedicated WordPress Editor account. Do not use Administrator. Run the interactive setup from
+the repository root; the operator enters the Application Password in a hidden terminal prompt:
+
+```bash
+python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
+  --site-key '<site-key>' --url 'https://example.com' --user 'wp-publish'
+```
+
+Temporary environment variables are an advanced alternative:
 
 ```bash
 export WP_URL='https://example.com'
@@ -30,8 +38,8 @@ export WP_USER='api-user'
 export WP_APP_PASS='application-password'
 ```
 
-Alternatively, use a repository-ignored `CLAUDE.local.md` with a site block. Never commit secrets or
-put an application password directly in a reusable command or log.
+The setup script writes the repository-ignored `CLAUDE.local.md` with mode `0600`. Never ask the user
+to paste an Application Password into chat or put it directly in a reusable command or log.
 
 ## Run sequence
 

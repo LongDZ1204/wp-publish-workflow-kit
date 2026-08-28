@@ -27,5 +27,7 @@ because a slug exists or is absent.
 - Completion requires WordPress readback and Google Sheet readback for the same immutable `Row ID`.
 
 Use `../../workflows/wp-publish/scripts/wp_scaffold_project.py` for a new client. Keep credentials in
-environment variables or an ignored local credential file; never put secrets in the Sheet, bundle,
-project context, logs, or Git.
+an ignored local credential file created by `../../workflows/wp-publish/scripts/wp_setup_credentials.py`.
+Use a dedicated Editor account and refuse Administrator by default. The user enters the Application
+Password only in the script's hidden terminal prompt; never request it in chat or put secrets in the
+Sheet, bundle, project context, logs, command arguments, or Git.

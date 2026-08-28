@@ -28,7 +28,7 @@ tác tạo hoặc cập nhật bài để xin bạn xác nhận.
 ## Bạn cần chuẩn bị 5 thứ
 
 1. URL website, ví dụ `https://example.com`.
-2. Tên đăng nhập WordPress và một Application Password.
+2. Một WordPress user riêng có role Editor và một Application Password.
 3. Link Google Sheet cùng tên tab quản lý bài.
 4. Link Google Doc hoặc file Markdown chứa nội dung.
 5. Tên plugin SEO đang dùng: **Yoast SEO** hoặc **Rank Math**.
@@ -36,7 +36,29 @@ tác tạo hoặc cập nhật bài để xin bạn xác nhận.
 Không cần chuẩn bị bản content riêng trong folder workflow. Google Doc hoặc Markdown là nguồn chính;
 AI sẽ kéo nội dung về khi chạy.
 
-## Bước 1 — Tạo WordPress Application Password
+## Bước 1 — Tạo WordPress user đúng quyền
+
+Nên tạo một user riêng cho workflow:
+
+- Username gợi ý: `wp-publish`.
+- Role: **Editor**.
+- Không dùng tài khoản Administrator đang quản trị website.
+
+Editor là lựa chọn mặc định vì workflow cần upload ảnh, tạo bài Nháp, cập nhật bài đã public và có thể
+cập nhật bài do user khác tạo. Author chỉ quản lý bài của chính họ; Contributor không upload được ảnh.
+Administrator có quyền cài plugin, sửa theme và quản lý user nên rộng hơn mức workflow cần.
+
+Cách tạo:
+
+1. Đăng nhập WordPress bằng tài khoản quản trị.
+2. Vào **Users → Add New**.
+3. Nhập username, email và tạo mật khẩu đăng nhập mạnh.
+4. Tại **Role**, chọn **Editor**.
+5. Bấm **Add New User**.
+
+Tài liệu gốc: [WordPress Roles and Capabilities](https://wordpress.org/documentation/article/roles-and-capabilities/).
+
+## Bước 2 — Tạo WordPress Application Password
 
 `Application Password` là mật khẩu riêng để công cụ kết nối WordPress qua REST API. `REST API` là
 cổng cho phép phần mềm đọc hoặc cập nhật dữ liệu WordPress; mật khẩu này có thể thu hồi riêng và không
@@ -45,22 +67,45 @@ làm đổi mật khẩu đăng nhập chính.
 Làm lần lượt:
 
 1. Đăng nhập WordPress Admin.
-2. Vào **Users → Profile**. Nếu tạo cho một user khác, vào **Users → All Users** rồi mở user đó.
+2. Vào **Users → All Users** rồi mở user Editor vừa tạo. Nếu đang đăng nhập bằng chính user đó, vào
+   **Users → Profile**.
 3. Kéo xuống phần **Application Passwords**.
 4. Nhập tên dễ nhớ, ví dụ `WP Publish Workflow`.
 5. Bấm **Add New Application Password** hoặc **Generate**.
 6. Copy mật khẩu ngay. WordPress chỉ hiển thị đầy đủ một lần.
-7. Nhờ AI tạo file credential local có sẵn chỗ trống, rồi tự dán mật khẩu vào file đó trên máy.
+7. Giữ mật khẩu trong clipboard và chuyển sang bước setup tự động bên dưới.
 
-Prompt để AI tạo đúng chỗ lưu:
+## Bước 3 — Để AI lưu và kiểm tra credential
+
+Repository có sẵn script setup an toàn. Script sẽ:
+
+- mở ô nhập password ẩn trong terminal;
+- kiểm tra đăng nhập WordPress;
+- xác nhận user có đủ quyền và từ chối Administrator;
+- lưu credential vào `CLAUDE.local.md`;
+- đặt quyền file `0600`, nghĩa là chỉ user trên máy hiện tại được đọc và ghi file.
+
+Gửi AI prompt này:
 
 ```text
-Hãy tạo file CLAUDE.local.md đã được Git bỏ qua, có sẵn chỗ điền URL, WordPress user và
-Application Password. Chỉ tạo template; tôi sẽ tự dán mật khẩu vào file trên máy, không gửi qua chat.
+Hãy chạy công cụ setup credential của WP Publish cho:
+- site-key: [tên ngắn, ví dụ vibim]
+- URL: [https://domain.com]
+- WordPress user: [username Editor vừa tạo]
+
+Hãy mở lệnh trong terminal để tôi nhập Application Password trực tiếp vào ô ẩn.
+Không yêu cầu tôi gửi password qua chat. Sau khi nhập, hãy kiểm tra role/quyền và báo kết quả.
+```
+
+AI sẽ chạy lệnh tương tự sau; người dùng không cần tự gõ:
+
+```bash
+python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
+  --site-key vibim --url https://vibimglobal.com --user wp-publish
 ```
 
 Không paste mật khẩu vào chat. Không đặt mật khẩu này vào Google Sheet, Google Doc, file context hoặc
-GitHub. File credential local phải nằm trong `.gitignore` để Git không thể đưa nó lên repository.
+GitHub. `CLAUDE.local.md` đã nằm trong `.gitignore` nên không được đưa lên repository.
 
 Nếu không thấy mục **Application Passwords**, kiểm tra ba việc:
 
@@ -70,7 +115,7 @@ Nếu không thấy mục **Application Passwords**, kiểm tra ba việc:
 
 Tài liệu gốc: [WordPress Application Passwords](https://developer.wordpress.org/advanced-administration/security/application-passwords/).
 
-## Bước 2 — Chọn Yoast SEO hoặc Rank Math
+## Bước 4 — Chọn Yoast SEO hoặc Rank Math
 
 Bạn chỉ cần trả lời AI một trong hai giá trị:
 
@@ -119,7 +164,7 @@ Password. WordPress yêu cầu post meta được đăng ký với `show_in_rest
 Xem [WordPress REST meta guide](https://developer.wordpress.org/rest-api/extending-the-rest-api/modifying-responses/#read-and-write-a-post-meta-field-in-post-responses)
 và [Yoast REST API](https://developer.yoast.com/customization/apis/rest-api/).
 
-## Bước 3 — Chuẩn bị Google Sheet
+## Bước 5 — Chuẩn bị Google Sheet
 
 Dùng 11 cột trong [Google Sheet template](google-sheet-template.md). Bạn chỉ cần nhập các cột nội dung;
 workflow tự cập nhật các cột theo dõi.
@@ -139,7 +184,7 @@ Hai dropdown cần có sẵn:
 | `Hoàn tất` | Bài đã đăng hoặc bài AUDIT đã cập nhật và kiểm tra xong |
 | `Cần xử lý` | Workflow dừng; xem lý do trong cột `Note` |
 
-## Bước 4 — Chuẩn bị file content có H1
+## Bước 6 — Chuẩn bị file content có H1
 
 Mỗi bài phải có **đúng một H1**. Workflow lấy H1 từ file content và giữ nguyên H1 đó trong body
 WordPress; không còn bước chọn theme hay body chịu trách nhiệm H1.
@@ -150,7 +195,7 @@ WordPress; không còn bước chọn theme hay body chịu trách nhiệm H1.
 
 Không dùng thêm H1 thứ hai ở phần thân bài. Các phần lớn tiếp theo dùng H2, rồi H3 nếu cần.
 
-## Bước 5 — Nhờ AI chạy kiểm tra trước khi demo
+## Bước 7 — Nhờ AI chạy kiểm tra trước khi demo
 
 Gửi prompt:
 
@@ -163,7 +208,7 @@ H1 trong content và SEO meta của [yoast/rankmath]. Chưa tạo hoặc cập n
 `Preflight` là vòng kiểm tra trước khi chạy thật. Kết quả cần là `READY FOR PILOT`. Nếu còn thiếu, AI
 phải nêu đúng phần thiếu và hướng dẫn bạn lấy hoặc sửa phần đó.
 
-## Bước 6 — Chạy demo NEW an toàn
+## Bước 8 — Chạy demo NEW an toàn
 
 Tạo một dòng test trên Sheet:
 

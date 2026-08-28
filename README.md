@@ -32,7 +32,7 @@ docs/                           Setup and Sheet documentation
 ## Requirements
 
 - Python 3.10+
-- A WordPress account with an Application Password
+- A dedicated WordPress Editor account with an Application Password; do not use Administrator
 - Access to Google Sheets and the selected content source
 - A source document containing exactly one H1; the workflow keeps that H1 in the WordPress body
 - `Pillow`, `certifi`, and `beautifulsoup4`; `pytest` for development tests
@@ -48,6 +48,8 @@ https://github.com/LongDZ1204/wp-publish-workflow-kit
 
 Hãy setup project cho [website/domain]. Chỉ cài và chạy preflight read-only.
 Chưa tạo hoặc cập nhật nội dung WordPress. Hỏi tôi từng thông tin còn thiếu, mỗi lần một mục.
+Credential phải dùng user Editor riêng. Hãy chạy wp_setup_credentials.py trong terminal để tôi
+nhập Application Password vào ô ẩn; không yêu cầu tôi gửi password qua chat.
 Mỗi file content có đúng một H1; giữ H1 đó trong body WordPress.
 Kết thúc bằng READY FOR PILOT hoặc danh sách phần còn thiếu.
 ```

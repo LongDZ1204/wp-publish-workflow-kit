@@ -13,7 +13,21 @@ python3 -m pip install -r requirements-dev.txt
 
 ## 2. Configure WordPress credentials
 
-Preferred for a temporary session:
+Use a dedicated WordPress Editor account. Editor can upload media and update published posts created
+by other users; Administrator is broader than this workflow needs.
+
+Preferred interactive setup:
+
+```bash
+python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
+  --site-key example-site --url https://example.com --user wp-publish
+```
+
+The script reads the Application Password through a hidden terminal prompt, verifies the account and
+required capabilities, refuses Administrator, then stores the credential in ignored
+`CLAUDE.local.md` with file mode `0600`.
+
+Environment variables remain available for a temporary advanced session:
 
 ```bash
 export WP_URL="https://example.com"
@@ -21,7 +35,7 @@ export WP_USER="wordpress-user"
 export WP_APP_PASS="application-password"
 ```
 
-The legacy local-file format is also supported in an ignored `CLAUDE.local.md`:
+The generated local-file format is:
 
 ```markdown
 ### Example WordPress (REST API)

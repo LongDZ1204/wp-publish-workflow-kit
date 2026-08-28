@@ -3,14 +3,14 @@
 ## Người và quyền
 
 - [ ] Có operator chịu trách nhiệm duyệt bundle/hash.
-- [ ] Có WordPress user riêng cho REST, quyền post/media vừa đủ.
+- [ ] Có WordPress user riêng cho REST, mặc định role Editor; không dùng Administrator.
 - [ ] Có quyền đọc/ghi đúng Google Sheet tab.
 - [ ] Có quyền đọc Google Doc hoặc file Markdown nguồn.
 
 ## Website
 
 - [ ] Domain và `site_key` đúng.
-- [ ] Application Password đã tạo và lưu ngoài Git.
+- [ ] Application Password đã được script kiểm tra và lưu vào `CLAUDE.local.md` mode `0600`.
 - [ ] File content có đúng một H1 và H1 được giữ trong body WordPress.
 - [ ] `seo_meta_adapter` là `yoast` hoặc `rankmath` và đã test REST.
 - [ ] Category/tag/author mặc định đã chốt hoặc có input.
