@@ -33,7 +33,7 @@ docs/                           Setup and Sheet documentation
 - Python 3.10+
 - A WordPress account with an Application Password
 - Access to Google Sheets and the selected content source
-- `Pillow` and `certifi`; `pytest` for development tests
+- `Pillow`, `certifi`, and `beautifulsoup4`; `pytest` for development tests
 
 ```bash
 python3 -m pip install -r requirements-dev.txt
