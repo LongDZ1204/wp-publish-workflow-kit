@@ -1,5 +1,8 @@
 # Setup
 
+This is the manual setup path for maintainers. New users should give the repository URL to Codex and
+follow [`huong-dan-nguoi-moi.md`](huong-dan-nguoi-moi.md).
+
 ## 1. Install dependencies
 
 ```bash
@@ -42,20 +45,30 @@ Complete the brand context and site policy. Keep `ready=false` until all require
 been tested. A one-time pilot is allowed only when `pilot_allowed=true` and the operator explicitly
 approves the pilot.
 
+Source content must contain exactly one H1. The workflow preserves that H1 in the WordPress body and
+the gate stops when the final HTML has zero or multiple H1 elements.
+
 ## 4. Configure the Sheet
 
 Use the 11-column contract in [`google-sheet-template.md`](google-sheet-template.md). Bind the Sheet
 ID, tab and timezone in the local project publish context. The workflow must update rows by immutable
 `Row ID`, never by blind append.
 
-## 5. Run checks
+## 5. Configure SEO meta REST
+
+Set `seo_meta_adapter` to `yoast` or `rankmath`. There is no separate SEO-plugin REST password; use
+the WordPress Application Password above. If the two plugin meta fields are not registered with
+`show_in_rest`, install the matching file from `snippets/` through a site-specific plugin, WPCode or
+Code Snippets, then verify the REST schema and a staging round-trip.
+
+## 6. Run checks
 
 ```bash
 python3 workflows/wp-publish/scripts/wp_selftest.py
 python3 scripts/check_distribution.py
 ```
 
-## 6. Publishing boundary
+## 7. Publishing boundary
 
 - NEW is always created as a WordPress draft.
 - AUDIT must use a fresh WordPress snapshot and backup.

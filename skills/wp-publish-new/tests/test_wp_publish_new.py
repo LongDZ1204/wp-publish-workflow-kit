@@ -70,7 +70,7 @@ class GateTests(unittest.TestCase):
         bundle.mkdir()
         (bundle / "publish-request.json").write_text("{}", encoding="utf-8")
         (bundle / "content.prepared.html").write_text(
-            '<p>Text</p><img src="asset://hero" alt="Useful image">', encoding="utf-8"
+            '<h1>Article title</h1><p>Text</p><img src="asset://hero" alt="Useful image">', encoding="utf-8"
         )
         (bundle / "image-manifest.json").write_text(json.dumps({"images": [{
             "asset_id": "hero", "alt": "Useful image", "decorative": False,
@@ -84,10 +84,10 @@ class GateTests(unittest.TestCase):
     def test_prepared_and_final_gate(self):
         with tempfile.TemporaryDirectory() as tmp:
             bundle = self.make_bundle(Path(tmp))
-            profile = {"ready": True, "body_h1_count": 0}
+            profile = {"ready": True}
             self.assertTrue(GATE.validate(bundle, profile, "prepared")["ok"])
             (bundle / "content.final.html").write_text(
-                '<p>Text</p><img src="https://example.com/hero.jpg" alt="Useful image">', encoding="utf-8"
+                '<h1>Article title</h1><p>Text</p><img src="https://example.com/hero.jpg" alt="Useful image">', encoding="utf-8"
             )
             self.assertTrue(GATE.validate(bundle, profile, "final")["ok"])
 
@@ -95,13 +95,22 @@ class GateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             bundle = self.make_bundle(Path(tmp))
             with self.assertRaisesRegex(ValueError, "BRAND-MISSING"):
-                GATE.validate(bundle, {"ready": False, "body_h1_count": 0}, "prepared")
+                GATE.validate(bundle, {"ready": False}, "prepared")
 
     def test_explicit_pilot_allows_not_ready_profile(self):
         with tempfile.TemporaryDirectory() as tmp:
             bundle = self.make_bundle(Path(tmp))
-            profile = {"ready": False, "pilot_allowed": True, "body_h1_count": 0}
+            profile = {"ready": False, "pilot_allowed": True}
             self.assertTrue(GATE.validate(bundle, profile, "prepared", allow_pilot=True)["ok"])
+
+    def test_content_must_have_exactly_one_h1(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = self.make_bundle(Path(tmp))
+            (bundle / "content.prepared.html").write_text(
+                '<p>No heading</p><img src="asset://hero" alt="Useful image">', encoding="utf-8"
+            )
+            with self.assertRaisesRegex(ValueError, "h1 expected=1 actual=0"):
+                GATE.validate(bundle, {"ready": True}, "prepared")
 
 
 class DraftHelpersTests(unittest.TestCase):
@@ -125,6 +134,14 @@ class DraftHelpersTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "BRAND-MISSING"):
             PUSH.build_payload(request, "<p>Body</p>", {}, {"seo_meta_adapter": None})
 
+    def test_rankmath_meta_is_bound_to_profile(self):
+        request = {
+            "title": "Post title", "slug": "post-title", "meta_description": "Meta text",
+        }
+        payload = PUSH.build_payload(request, "<p>Body</p>", {}, {"seo_meta_adapter": "rankmath"})
+        self.assertEqual(payload["meta"]["rank_math_title"], "Post title")
+        self.assertEqual(payload["meta"]["rank_math_description"], "Meta text")
+
     def test_strong_wrapper_outputs_json_report(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -142,12 +159,12 @@ class DraftHelpersTests(unittest.TestCase):
 
 
 class DocExportTests(unittest.TestCase):
-    def test_clean_export_extracts_image_and_drops_title(self):
+    def test_clean_export_extracts_image_drops_doc_title_and_keeps_h1(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             archive_path = root / "doc.zip"
             html = '''<html><body><p class="title"><span>Title</span></p>
-            <h2 style="x"><span>Section</span></h2>
+            <h1><span>Content H1</span></h1><h2 style="x"><span>Section</span></h2>
             <p><span>A </span><span style="font-weight:700">bold</span></p>
             <p><span><img src="images/image1.jpg"></span></p>
             <ul><li><span>One</span></li></ul></body></html>'''
@@ -161,6 +178,7 @@ class DocExportTests(unittest.TestCase):
             }]}
             clean_html, request = DOC_EXPORT.convert(archive_path, mapping)
             self.assertNotIn("Title", clean_html)
+            self.assertIn("<h1>Content H1</h1>", clean_html)
             self.assertIn("<h2>Section</h2>", clean_html)
             self.assertIn("<strong>bold</strong>", clean_html)
             self.assertIn('src="asset://hero"', clean_html)

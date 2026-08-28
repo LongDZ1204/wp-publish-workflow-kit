@@ -53,11 +53,10 @@ def validate(bundle: Path, profile: dict, phase: str, allow_pilot: bool = False)
         errors.append("INPUT-MISSING: Markdown heading remains in HTML")
     parser = InventoryParser()
     parser.feed(html)
-    expected_h1 = profile.get("body_h1_count")
-    if expected_h1 is None:
-        errors.append("BRAND-MISSING: body_h1_count")
-    elif parser.h1_count != int(expected_h1):
-        errors.append(f"VERIFY-DIFF: h1 expected={expected_h1} actual={parser.h1_count}")
+    # Content files are the source of the article H1. Keep exactly one H1 in
+    # the WordPress body instead of making H1 ownership a per-site choice.
+    if parser.h1_count != 1:
+        errors.append(f"VERIFY-DIFF: h1 expected=1 actual={parser.h1_count}")
     items = manifest.get("images", [])
     by_id = {str(item.get("asset_id")): item for item in items}
     if len(by_id) != len(items):

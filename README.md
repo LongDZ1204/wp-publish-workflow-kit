@@ -2,8 +2,8 @@
 
 A portable, approval-bound workflow for publishing content from Google Sheets/Docs to WordPress.
 
-> Người mới bắt đầu: đọc **[Hướng dẫn cài đặt và chạy pilot](docs/huong-dan-nguoi-moi.md)** và
-> **[Checklist chuẩn bị](docs/checklist-chuan-bi.md)** trước khi kết nối website thật.
+> Người mới: không cần tự cài bằng lệnh. Dùng prompt AI ở phần **Quick start**, sau đó làm theo
+> **[hướng dẫn từng bước](docs/huong-dan-nguoi-moi.md)**.
 
 It supports two routes:
 
@@ -24,6 +24,7 @@ skills/image-onpage/            Image inventory and preparation
 skills/strong-to-b/             HTML normalization instructions
 tools/strong-to-b/              Deterministic HTML engine
 workflows/wp-publish/           State machine, contracts, scripts and tests
+snippets/                       Yoast/Rank Math REST meta adapters
 templates/                      Safe starter files
 docs/                           Setup and Sheet documentation
 ```
@@ -33,43 +34,29 @@ docs/                           Setup and Sheet documentation
 - Python 3.10+
 - A WordPress account with an Application Password
 - Access to Google Sheets and the selected content source
+- A source document containing exactly one H1; the workflow keeps that H1 in the WordPress body
 - `Pillow`, `certifi`, and `beautifulsoup4`; `pytest` for development tests
-
-```bash
-python3 -m pip install -r requirements-dev.txt
-```
 
 ## Quick start
 
-Install the Codex plugin from this repository:
+Open Codex in your working folder and send this prompt. The AI should install dependencies, scaffold
+the project and run read-only checks; it must not write to WordPress during setup.
 
-```bash
-codex plugin marketplace add LongDZ1204/wp-publish-workflow-kit --ref main
-codex plugin add wp-publish-workflow-kit@seo-cowork-tools
+```text
+Hãy cài WP Publish Workflow Kit từ:
+https://github.com/LongDZ1204/wp-publish-workflow-kit
+
+Hãy setup project cho [website/domain]. Chỉ cài và chạy preflight read-only.
+Chưa tạo hoặc cập nhật nội dung WordPress. Hỏi tôi từng thông tin còn thiếu, mỗi lần một mục.
+Mỗi file content có đúng một H1; giữ H1 đó trong body WordPress.
+Kết thúc bằng READY FOR PILOT hoặc danh sách phần còn thiếu.
 ```
 
-Restart Codex and use a new task after installation. For local project data, clone the repository:
+The beginner guide shows how to create a WordPress Application Password, prepare the Sheet, enable
+Yoast/Rank Math meta through REST and run a safe NEW draft pilot:
+[`docs/huong-dan-nguoi-moi.md`](docs/huong-dan-nguoi-moi.md).
 
-```bash
-git clone https://github.com/LongDZ1204/wp-publish-workflow-kit.git
-cd wp-publish-workflow-kit
-```
-
-1. Copy `templates/context.example.md` to `projects/<client>/context.md` and fill only verified facts.
-2. Scaffold the safe project folders:
-
-   ```bash
-   python3 workflows/wp-publish/scripts/wp_scaffold_project.py --client <client>
-   ```
-
-3. Fill `projects/<client>/knowledge/publish-context.json` from
-   `templates/publish-context.example.json`. Keep `ready=false` until REST, Sheet, meta and media
-   round-trips have been tested.
-4. Create the Sheet columns described in `docs/google-sheet-template.md`.
-5. Provide credentials through environment variables or an ignored `CLAUDE.local.md` file.
-6. Run the complete workflow through the `wp-publish` skill. Do not call write executors directly.
-
-Detailed setup: [`docs/setup.md`](docs/setup.md).
+Manual commands for maintainers are in [`docs/setup.md`](docs/setup.md).
 
 For team use, clone this repository into a shared workspace or reference it from a local Codex
 marketplace. The `.codex-plugin/plugin.json` manifest exposes the skills; project data and credentials
@@ -81,6 +68,7 @@ remain outside Git through the supplied ignore rules.
 python3 workflows/wp-publish/scripts/wp_selftest.py
 python3 -m unittest discover -s workflows/wp-publish/tests -p 'test_*.py'
 python3 -m unittest discover -s skills/wp-publish-new/tests -p 'test_*.py'
+python3 -m unittest discover -s skills/wp-rest-publish/tests -p 'test_*.py'
 python3 -m unittest discover -s skills/image-onpage/tests -p 'test_*.py'
 python3 -m pytest tools/strong-to-b/test_strong_to_b.py -q
 python3 scripts/check_distribution.py

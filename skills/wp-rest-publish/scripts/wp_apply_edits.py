@@ -22,7 +22,12 @@ Exit 1 nếu bất kỳ edit nào không khớp đúng 1 lần, hoặc vùng kh�
 """
 import argparse
 import json
+import re
 import sys
+
+
+def h1_count(html):
+    return len(re.findall(r"<h1\b", html, flags=re.IGNORECASE))
 
 
 def main():
@@ -67,9 +72,14 @@ def main():
             print(f"   LOST: {f}")
         sys.exit(1)
 
+    count = h1_count(raw)
+    if count != 1:
+        print(f"!!! DỪNG — HTML sau edit phải có đúng 1 H1; hiện có {count}.")
+        sys.exit(1)
+
     print(f"OK — {len(applied)}/{len(edits)} edit khớp đúng 1 lần. "
           f"Length {orig_len} -> {len(raw)} ({len(raw)-orig_len:+d}).")
-    print(f"Cấu trúc giữ nguyên: tables={raw.count('<table')} imgs={raw.count('<img')} iframes={raw.count('<iframe')}")
+    print(f"Cấu trúc giữ nguyên: h1={count} tables={raw.count('<table')} imgs={raw.count('<img')} iframes={raw.count('<iframe')}")
     for l, kind in applied:
         print(f"   [{kind}] {l}")
     if a.frozen:

@@ -40,7 +40,7 @@ def scaffold(client: str, projects_root: Path) -> dict:
         project / "knowledge/publish-context.md": (
             f"# {client} publish context\n\n"
             "Site-specific decisions for workflow `wp-publish`. Keep brand/business facts in "
-            "`../context.md`. Confirm REST, Sheet/tab, body H1 ownership, SEO meta adapter and a media "
+            "`../context.md`. Confirm REST, Sheet/tab, SEO meta adapter and a media "
             "round-trip before enabling writes.\n"
         ),
         project / "knowledge/publish-context.json": json.dumps({
@@ -48,7 +48,6 @@ def scaffold(client: str, projects_root: Path) -> dict:
             "site_key": client,
             "ready": False,
             "pilot_allowed": False,
-            "body_h1_count": None,
             "format_policy": "preserve",
             "max_kb": 150,
             "max_width": 1200,

@@ -14,6 +14,7 @@ shortcodes, tables, embeds, and media references.
 - Store an immutable backup before any write.
 - Build exact `{old, new}` replacements; every `old` value must match once.
 - Preserve frozen passages and structural element counts.
+- Keep exactly one source H1 in the WordPress body.
 - Stop when WordPress returns HTML, a challenge page, an unexpected status, or ambiguous state.
 - Require explicit approval for the exact prepared artifact.
 - Re-fetch after the write and verify both changed and frozen content.
@@ -55,6 +56,8 @@ Show the operator the diff summary and verification plan. After approval, push a
 ```bash
 python3 skills/wp-rest-publish/scripts/wp_push_verify.py \
   --site '<site-key>' --id '<post-id>' --html '<workdir>/new.html' \
+  --seo-adapter '<yoast|rankmath>' --seo-title '<SEO title>' \
+  --meta-description '<meta description>' \
   --expect 'new passage' --keep 'frozen passage'
 ```
 

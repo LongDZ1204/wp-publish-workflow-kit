@@ -31,6 +31,29 @@ def fetch_public(url):
         return r.read().decode("utf-8", "ignore")
 
 
+def h1_count(html):
+    return len(re.findall(r"<h1\b", html, flags=re.IGNORECASE))
+
+
+def build_seo_meta(adapter, title=None, description=None):
+    """Map normalized SEO fields to the selected plugin's registered post meta."""
+    if not title and not description:
+        return {}
+    adapter = (adapter or "").lower()
+    if adapter == "yoast":
+        keys = ("_yoast_wpseo_title", "_yoast_wpseo_metadesc")
+    elif adapter == "rankmath":
+        keys = ("rank_math_title", "rank_math_description")
+    else:
+        raise ValueError("--seo-adapter must be yoast or rankmath when SEO fields are supplied")
+    values = {}
+    if title:
+        values[keys[0]] = title
+    if description:
+        values[keys[1]] = description
+    return values
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--site", required=True)
@@ -48,28 +71,34 @@ def main():
                          "KHONG ghi de (an le 19/08: 3 expect chi kiem 1, van bao ALL GOOD).")
     ap.add_argument("--keep", default="")
     ap.add_argument("--claude-local")
-    ap.add_argument("--title", default=None, help="Optional: update post title (H1) in the same call")
+    ap.add_argument("--title", default=None, help="Optional: update the WordPress post title in the same call")
+    ap.add_argument("--seo-adapter", choices=("yoast", "rankmath"),
+                    help="SEO plugin used to map title and meta description")
+    ap.add_argument("--seo-title", default=None, help="Optional SEO title")
+    ap.add_argument("--meta-description", default=None, help="Optional SEO meta description")
     ap.add_argument("--yoast-title", default=None,
-                    help="Optional: update exposed _yoast_wpseo_title meta in the same call")
+                    help="Deprecated alias for --seo-adapter yoast --seo-title")
     ap.add_argument("--yoast-metadesc", default=None,
-                    help="Optional: update exposed _yoast_wpseo_metadesc meta in the same call")
+                    help="Deprecated alias for --seo-adapter yoast --meta-description")
     ap.add_argument("--verify-only", action="store_true")
     a = ap.parse_args()
 
     base, user, app = load_credential(a.site, a.claude_local)
     content = open(a.html, encoding="utf-8").read()
+    if h1_count(content) != 1:
+        sys.exit(f"ERR: HTML phải có đúng 1 H1; hiện có {h1_count(content)}")
+    legacy_yoast = bool(a.yoast_title or a.yoast_metadesc)
+    adapter = "yoast" if legacy_yoast else a.seo_adapter
+    seo_title = a.yoast_title or a.seo_title
+    meta_description = a.yoast_metadesc or a.meta_description
+    expected_seo_meta = build_seo_meta(adapter, seo_title, meta_description)
 
     if not a.verify_only:
         payload = {"content": content}
         if a.title:
             payload["title"] = a.title
-        yoast_meta = {}
-        if a.yoast_title:
-            yoast_meta["_yoast_wpseo_title"] = a.yoast_title
-        if a.yoast_metadesc:
-            yoast_meta["_yoast_wpseo_metadesc"] = a.yoast_metadesc
-        if yoast_meta:
-            payload["meta"] = yoast_meta
+        if expected_seo_meta:
+            payload["meta"] = expected_seo_meta
         st, d = wp_post(base, user, app, f"{a.rest_base}/{a.id}", payload)
         if st != 200 or "id" not in d:
             sys.exit(f"ERR push HTTP {st}: {json.dumps(d)[:300]}")
@@ -102,9 +131,11 @@ def main():
     # ranh giới thẻ), nên probe trượt ở frontend CHƯA chắc là đẩy hỏng. Lấy sẵn
     # content.raw để đối chiếu — nguồn sự thật là đây, không phải trang public.
     raw = ""
+    readback_meta = {}
     try:
-        _, d_raw = wp_get(base, user, app, f"{a.rest_base}/{a.id}?context=edit&_fields=content")
+        _, d_raw = wp_get(base, user, app, f"{a.rest_base}/{a.id}?context=edit&_fields=content,meta")
         raw = (d_raw.get("content") or {}).get("raw") or ""
+        readback_meta = d_raw.get("meta") or {}
     except Exception as e:
         print(f"WARN: không đọc được content.raw để đối chiếu ({e})")
 
@@ -117,6 +148,13 @@ def main():
         return False, "✗ THIẾU CẢ TRÊN content.raw"
 
     ok = True
+    if h1_count(raw) != 1:
+        ok = False
+        print(f"✗ content.raw phải có đúng 1 H1; hiện có {h1_count(raw)}")
+    for key, expected in expected_seo_meta.items():
+        if readback_meta.get(key) != expected:
+            ok = False
+            print(f"✗ SEO meta {key} đọc lại không khớp")
     _exp = list(a.expect)
     if a.edits:
         import json as _j

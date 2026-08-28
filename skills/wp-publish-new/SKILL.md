@@ -43,8 +43,9 @@ python3 skills/wp-publish-new/scripts/wp_doc_export.py \
   --html-out content.rendered.html --image-request-out image-request.json
 ```
 
-Mapping phải cấp alt/caption/filename rõ ràng; Google Doc không phải nguồn alt. Script loại style rác của
-Docs, bỏ title khỏi body, giữ heading/list/link/table và thay ảnh bằng `asset://<asset_id>`.
+Mapping phải cấp alt/caption/filename rõ ràng; Google Doc không phải nguồn alt. Source phải có đúng một
+H1 (Google Doc dùng Heading 1). Script loại style rác của Docs, chỉ bỏ paragraph mang style `title` của
+Docs nếu có, giữ H1 cùng heading/list/link/table và thay ảnh bằng `asset://<asset_id>`.
 
 ```bash
 python3 skills/wp-publish-new/scripts/wp_bundle.py lock \
@@ -100,6 +101,7 @@ uncertain POST; reconcile WordPress first and resume only the same `run_id`.
 ## Completion gate
 
 - Approval hash is current.
+- Final HTML keeps exactly one H1 from the source content.
 - Final HTML has no local path, Markdown image marker, or unresolved asset token.
 - WordPress GET `context=edit` matches title, slug, content and status `draft`.
 - The workflow has written and read back the same Sheet row.

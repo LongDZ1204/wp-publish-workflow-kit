@@ -119,13 +119,19 @@ def build_payload(request: dict, final_html: str, media: dict, profile: dict | N
         if request.get(source_key) not in (None, "", []):
             payload[target_key] = request[source_key]
     meta = dict(request.get("meta") or {})
-    adapter = (profile or {}).get("seo_meta_adapter")
+    adapter = str((profile or {}).get("seo_meta_adapter") or "").lower()
     if request.get("meta_description") or request.get("seo_title"):
-        if adapter != "yoast":
-            raise ValueError("BRAND-MISSING: seo_meta_adapter must support title/meta input")
-        if request.get("meta_description"):
-            meta["_yoast_wpseo_metadesc"] = request["meta_description"]
-        meta["_yoast_wpseo_title"] = request.get("seo_title") or request["title"]
+        seo_title = request.get("seo_title") or request["title"]
+        if adapter == "yoast":
+            meta["_yoast_wpseo_title"] = seo_title
+            if request.get("meta_description"):
+                meta["_yoast_wpseo_metadesc"] = request["meta_description"]
+        elif adapter == "rankmath":
+            meta["rank_math_title"] = seo_title
+            if request.get("meta_description"):
+                meta["rank_math_description"] = request["meta_description"]
+        else:
+            raise ValueError("BRAND-MISSING: seo_meta_adapter must be yoast or rankmath")
     if meta:
         payload["meta"] = meta
     featured = request.get("featured_asset_id")
@@ -209,7 +215,14 @@ def run(args: argparse.Namespace) -> int:
         atomic_json(state_path, state)
     status, readback = WP_LIB.wp_get(base_url, user, app_pass, f"posts/{int(state['post_id'])}?context=edit")
     raw = (readback.get("content") or {}).get("raw")
-    if status >= 300 or readback.get("status") != "draft" or raw != final_html:
+    expected_meta = build_payload(request, final_html, media, profile).get("meta", {})
+    readback_meta = readback.get("meta") or {}
+    meta_diff = {
+        key: {"expected": value, "actual": readback_meta.get(key)}
+        for key, value in expected_meta.items()
+        if readback_meta.get(key) != value
+    }
+    if status >= 300 or readback.get("status") != "draft" or raw != final_html or meta_diff:
         raise ValueError("VERIFY-DIFF: WordPress draft readback differs")
     state["verified"] = True
     state["wp_status"] = "draft"

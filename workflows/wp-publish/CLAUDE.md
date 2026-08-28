@@ -23,6 +23,7 @@ Workflow gọi các component, không viết lại logic của chúng:
 5. Không retry mù thao tác POST; phải reconcile trạng thái thật trước.
 6. Không tự sửa skill/context từ learning candidate.
 7. Không đổi URL/filename ảnh live trong route audit nếu chưa được duyệt.
+8. Không bỏ hoặc tự sinh H1; source content phải có đúng một H1 và H1 đó ở lại trong body WordPress.
 
 ## 2. Nguồn sự thật
 
@@ -72,6 +73,7 @@ python3 workflows/wp-publish/scripts/wp_route.py \
 
 - Google Doc: connector kéo chữ + ảnh; lưu **một** snapshot hiện hành và `source-lock.json`.
 - Markdown local: không copy nguồn; `source-lock.json` giữ path + SHA-256.
+- Source Google Doc/Markdown/HTML phải có đúng một H1; thiếu hoặc trùng H1 thì dừng.
 - Ảnh gốc về `content/06-assets/`; không copy vào bundle.
 - Route `NEW` gọi `wp-publish-new`.
 - Route `AUDIT` fetch `content.raw` + immutable backup rồi gọi `wp-rest-publish` để dựng bản mới.
@@ -131,6 +133,7 @@ Một ca chỉ hoàn thành khi:
 
 - Bundle đúng contract, approval còn hiệu lực.
 - Không còn local path, asset token hoặc marker Markdown trong HTML final.
+- HTML final có đúng một H1 lấy từ source content.
 - Image gate và strong report xanh.
 - NEW là draft; AUDIT có backup + revision/readback.
 - Không tạo trùng post/media/Sheet row khi rerun.
@@ -142,6 +145,7 @@ Một ca chỉ hoàn thành khi:
 python3 workflows/wp-publish/scripts/wp_selftest.py
 python3 -m unittest discover -s workflows/wp-publish/tests -p 'test_*.py'
 python3 -m unittest discover -s skills/wp-publish-new/tests -p 'test_*.py'
+python3 -m unittest discover -s skills/wp-rest-publish/tests -p 'test_*.py'
 python3 -m unittest discover -s skills/image-onpage/tests -p 'test_*.py'
 python3 -m pytest tools/strong-to-b/test_strong_to_b.py -q
 ```

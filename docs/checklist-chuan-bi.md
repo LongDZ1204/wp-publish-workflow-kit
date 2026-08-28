@@ -11,8 +11,8 @@
 
 - [ ] Domain và `site_key` đúng.
 - [ ] Application Password đã tạo và lưu ngoài Git.
-- [ ] H1 ownership đã chốt.
-- [ ] SEO meta adapter đã test.
+- [ ] File content có đúng một H1 và H1 được giữ trong body WordPress.
+- [ ] `seo_meta_adapter` là `yoast` hoặc `rankmath` và đã test REST.
 - [ ] Category/tag/author mặc định đã chốt hoặc có input.
 - [ ] Media upload, reuse và readback đã test.
 
