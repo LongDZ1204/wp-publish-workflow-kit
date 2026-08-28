@@ -22,12 +22,13 @@ shortcodes, tables, embeds, and media references.
 
 ## Credentials
 
-Use a dedicated WordPress Editor account. Do not use Administrator. Run the interactive setup from
-the repository root; the operator enters the Application Password in a hidden terminal prompt:
+Use a dedicated WordPress Editor account. Do not use Administrator. Run setup from the repository
+root; the operator enters the Application Password in a native masked dialog:
 
 ```bash
 python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
-  --site-key '<site-key>' --url 'https://example.com' --user 'wp-publish'
+  --site-key '<site-key>' --url 'https://example.com' --user 'wp-publish' \
+  --input-mode dialog
 ```
 
 Temporary environment variables are an advanced alternative:
@@ -38,8 +39,9 @@ export WP_USER='api-user'
 export WP_APP_PASS='application-password'
 ```
 
-The setup script writes the repository-ignored `CLAUDE.local.md` with mode `0600`. Never ask the user
-to paste an Application Password into chat or put it directly in a reusable command or log.
+Wait for the command to return `OK` or `STOP`; do not ask the user to report “done” or copy terminal
+output. The setup script writes the repository-ignored `CLAUDE.local.md` with mode `0600`. Never ask
+the user to paste an Application Password into chat or put it directly in a reusable command or log.
 
 ## Run sequence
 

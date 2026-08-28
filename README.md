@@ -48,8 +48,8 @@ https://github.com/LongDZ1204/wp-publish-workflow-kit
 
 Hãy setup project cho [website/domain]. Chỉ cài và chạy preflight read-only.
 Chưa tạo hoặc cập nhật nội dung WordPress. Hỏi tôi từng thông tin còn thiếu, mỗi lần một mục.
-Credential phải dùng user Editor riêng. Hãy chạy wp_setup_credentials.py trong terminal để tôi
-nhập Application Password vào ô ẩn; không yêu cầu tôi gửi password qua chat.
+Credential phải dùng user Editor riêng. Hãy chạy wp_setup_credentials.py với hộp thoại mật khẩu;
+chờ lệnh tự trả kết quả, không yêu cầu tôi nhập trong terminal, gửi password qua chat hoặc báo “xong”.
 Mỗi file content có đúng một H1; giữ H1 đó trong body WordPress.
 Kết thúc bằng READY FOR PILOT hoặc danh sách phần còn thiếu.
 ```

@@ -20,12 +20,16 @@ Preferred interactive setup:
 
 ```bash
 python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
-  --site-key example-site --url https://example.com --user wp-publish
+  --site-key example-site --url https://example.com --user wp-publish \
+  --input-mode dialog
 ```
 
-The script reads the Application Password through a hidden terminal prompt, verifies the account and
-required capabilities, refuses Administrator, then stores the credential in ignored
+The script opens a native masked password dialog, verifies the account and required capabilities,
+refuses Administrator, then stores the credential in ignored
 `CLAUDE.local.md` with file mode `0600`.
+
+`--input-mode auto` is the default and uses a native dialog when available. Use
+`--input-mode terminal` only as a fallback on systems without a supported desktop dialog.
 
 Environment variables remain available for a temporary advanced session:
 

@@ -79,7 +79,7 @@ Làm lần lượt:
 
 Repository có sẵn script setup an toàn. Script sẽ:
 
-- mở ô nhập password ẩn trong terminal;
+- mở một hộp thoại riêng để nhập password, ký tự được che;
 - kiểm tra đăng nhập WordPress;
 - xác nhận user có đủ quyền và từ chối Administrator;
 - lưu credential vào `CLAUDE.local.md`;
@@ -93,16 +93,28 @@ Hãy chạy công cụ setup credential của WP Publish cho:
 - URL: [https://domain.com]
 - WordPress user: [username Editor vừa tạo]
 
-Hãy mở lệnh trong terminal để tôi nhập Application Password trực tiếp vào ô ẩn.
-Không yêu cầu tôi gửi password qua chat. Sau khi nhập, hãy kiểm tra role/quyền và báo kết quả.
+Hãy chạy script bằng --input-mode dialog và chờ chính lệnh trả kết quả.
+Không yêu cầu tôi nhập trong terminal, gửi password qua chat, trả lời “xong” hoặc tự đọc log.
+Sau khi hộp thoại đóng, hãy tự kiểm tra role/quyền và báo kết quả.
 ```
 
 AI sẽ chạy lệnh tương tự sau; người dùng không cần tự gõ:
 
 ```bash
 python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
-  --site-key vibim --url https://vibimglobal.com --user wp-publish
+  --site-key vibim --url https://vibimglobal.com --user wp-publish \
+  --input-mode dialog
 ```
+
+Sau khi AI chạy lệnh:
+
+1. Một cửa sổ **WP Publish Setup** xuất hiện.
+2. Paste Application Password vào ô có ký tự được che.
+3. Bấm **Lưu & kiểm tra**.
+4. Chờ AI tự báo `OK` hoặc hướng dẫn xử lý lỗi. Không cần trả lời “xong”.
+
+Nếu hộp thoại không xuất hiện, AI mới được chuyển sang `--input-mode terminal` và phải nói rõ người
+dùng cần click vào terminal trước khi paste. Đây chỉ là phương án dự phòng.
 
 Không paste mật khẩu vào chat. Không đặt mật khẩu này vào Google Sheet, Google Doc, file context hoặc
 GitHub. `CLAUDE.local.md` đã nằm trong `.gitignore` nên không được đưa lên repository.

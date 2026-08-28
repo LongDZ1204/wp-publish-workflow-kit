@@ -29,5 +29,7 @@ because a slug exists or is absent.
 Use `../../workflows/wp-publish/scripts/wp_scaffold_project.py` for a new client. Keep credentials in
 an ignored local credential file created by `../../workflows/wp-publish/scripts/wp_setup_credentials.py`.
 Use a dedicated Editor account and refuse Administrator by default. The user enters the Application
-Password only in the script's hidden terminal prompt; never request it in chat or put secrets in the
-Sheet, bundle, project context, logs, command arguments, or Git.
+Password only in the script's native masked dialog. Run with `--input-mode dialog`, wait for the
+process result, and never ask the user to reply “done” or read terminal output. Use terminal input only
+when the dialog is unavailable. Never request the secret in chat or put it in the Sheet, bundle,
+project context, logs, command arguments, or Git.

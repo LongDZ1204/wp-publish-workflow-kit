@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Securely verify and store one WordPress Application Password.
 
-The password is collected with getpass so it is never placed in shell history,
-command arguments, or AI chat. The resulting CLAUDE.local.md is mode 0600 and
-is ignored by this repository.
+Prefer a native masked password dialog so Codex can wait for completion without
+asking the user to interact with, or report back from, a terminal. The password
+never appears in shell history, command arguments, AI chat, or script output.
 """
 
 from __future__ import annotations
@@ -12,7 +12,10 @@ import argparse
 import getpass
 import importlib.util
 import os
+import platform
 import re
+import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -39,6 +42,85 @@ REQUIRED_CAPABILITIES = (
     "edit_published_posts",
     "upload_files",
 )
+MACOS_DIALOG_SCRIPT = r'''
+on run argv
+    set siteName to item 1 of argv
+    set promptText to "Dán Application Password cho " & siteName & "." & return & return & "Mật khẩu được che và không gửi vào chat."
+    set answerBox to display dialog promptText default answer "" with hidden answer buttons {"Hủy", "Lưu & kiểm tra"} default button "Lưu & kiểm tra" cancel button "Hủy" with title "WP Publish Setup"
+    return text returned of answerBox
+end run
+'''
+
+
+class DialogUnavailable(RuntimeError):
+    pass
+
+
+class InputCancelled(ValueError):
+    pass
+
+
+def macos_password_dialog(site_key: str, runner=None) -> str:
+    if not shutil.which("osascript"):
+        raise DialogUnavailable("osascript is not available")
+    runner = runner or subprocess.run
+    result = runner(
+        ["osascript", "-e", MACOS_DIALOG_SCRIPT, site_key],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise InputCancelled("password entry was cancelled")
+    return result.stdout.rstrip("\r\n")
+
+
+def linux_password_dialog(site_key: str, runner=None) -> str:
+    if not shutil.which("zenity"):
+        raise DialogUnavailable("zenity is not available")
+    if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+        raise DialogUnavailable("no Linux desktop display is available")
+    runner = runner or subprocess.run
+    result = runner(
+        [
+            "zenity",
+            "--password",
+            "--title=WP Publish Setup",
+            f"--text=Dán Application Password cho {site_key}. Mật khẩu không gửi vào chat.",
+            "--ok-label=Lưu & kiểm tra",
+            "--cancel-label=Hủy",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise InputCancelled("password entry was cancelled")
+    return result.stdout.rstrip("\r\n")
+
+
+def native_password_dialog(site_key: str) -> str:
+    system = platform.system().lower()
+    if system == "darwin":
+        return macos_password_dialog(site_key)
+    if system == "linux":
+        return linux_password_dialog(site_key)
+    raise DialogUnavailable(f"native password dialog is not supported on {system or 'this platform'}")
+
+
+def collect_password(site_key: str, input_mode: str) -> str:
+    if input_mode in {"auto", "dialog"}:
+        try:
+            return native_password_dialog(site_key)
+        except DialogUnavailable:
+            if input_mode == "dialog":
+                raise
+    if not sys.stdin.isatty():
+        raise ValueError(
+            "native password dialog is unavailable and terminal input is not interactive; "
+            "rerun from a terminal with --input-mode terminal"
+        )
+    return getpass.getpass("Application Password (input hidden): ")
 
 
 def validate_inputs(site_key: str, url: str, user: str) -> tuple[str, str, str]:
@@ -109,13 +191,17 @@ def main() -> int:
     parser.add_argument("--url", required=True)
     parser.add_argument("--user", required=True)
     parser.add_argument("--output", default="CLAUDE.local.md")
+    parser.add_argument(
+        "--input-mode",
+        choices=("auto", "dialog", "terminal"),
+        default="auto",
+        help="Use a native password dialog when available; terminal is the fallback",
+    )
     parser.add_argument("--replace", action="store_true", help="Replace an existing block for this site")
     args = parser.parse_args()
     try:
         site_key, base_url, username = validate_inputs(args.site_key, args.url, args.user)
-        if not sys.stdin.isatty():
-            raise ValueError("run this command in an interactive terminal; password piping is disabled")
-        app_password = getpass.getpass("Application Password (input hidden): ").strip()
+        app_password = collect_password(site_key, args.input_mode).strip()
         if not app_password:
             raise ValueError("Application Password is required")
         status, profile = WP_LIB.wp_get(

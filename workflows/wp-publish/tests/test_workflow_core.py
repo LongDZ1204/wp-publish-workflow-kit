@@ -1,8 +1,10 @@
 import importlib.util
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
@@ -180,6 +182,22 @@ class CredentialSetupTests(unittest.TestCase):
         replaced = credential_setup.update_text(old, "demo", new, replace=True)
         self.assertIn("https://new.example", replaced)
         self.assertNotIn("https://old.example", replaced)
+
+    def test_macos_dialog_returns_secret_without_printing_it(self):
+        completed = subprocess.CompletedProcess([], 0, stdout="abcd efgh\n", stderr="")
+        with mock.patch.object(credential_setup.shutil, "which", return_value="/usr/bin/osascript"):
+            password = credential_setup.macos_password_dialog("demo", runner=lambda *args, **kwargs: completed)
+        self.assertEqual(password, "abcd efgh")
+
+    def test_macos_dialog_cancel_stops_without_terminal_fallback(self):
+        completed = subprocess.CompletedProcess([], 1, stdout="", stderr="User canceled")
+        with mock.patch.object(credential_setup.shutil, "which", return_value="/usr/bin/osascript"):
+            with self.assertRaisesRegex(credential_setup.InputCancelled, "cancelled"):
+                credential_setup.macos_password_dialog("demo", runner=lambda *args, **kwargs: completed)
+
+    def test_auto_mode_uses_native_dialog_without_tty(self):
+        with mock.patch.object(credential_setup, "native_password_dialog", return_value="secret"):
+            self.assertEqual(credential_setup.collect_password("demo", "auto"), "secret")
 
 
 if __name__ == "__main__":

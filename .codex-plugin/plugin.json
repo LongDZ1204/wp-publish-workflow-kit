@@ -1,6 +1,6 @@
 {
   "name": "wp-publish-workflow-kit",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Approval-bound WordPress publishing for NEW drafts and verified AUDIT updates.",
   "author": {
     "name": "SEO Cowork Contributors"
