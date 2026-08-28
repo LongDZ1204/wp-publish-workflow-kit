@@ -1,0 +1,21 @@
+{
+  "name": "seo-cowork-tools",
+  "interface": {
+    "displayName": "SEO Cowork Tools"
+  },
+  "plugins": [
+    {
+      "name": "wp-publish-workflow-kit",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/LongDZ1204/wp-publish-workflow-kit.git",
+        "ref": "main"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

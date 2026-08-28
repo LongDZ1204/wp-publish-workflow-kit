@@ -1,0 +1,20 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+CLAUDE.local.md
+
+# Runtime/client artifacts
+projects/
+*.wp-raw-backup.html
+*.raw.html
+approval.json
+run-state.json
+source-lock.json
+content.final.html
+doc-export.zip

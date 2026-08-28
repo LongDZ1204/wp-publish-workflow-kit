@@ -1,0 +1,26 @@
+{
+  "name": "wp-publish-workflow-kit",
+  "version": "0.1.0",
+  "description": "Approval-bound WordPress publishing for NEW drafts and verified AUDIT updates.",
+  "author": {
+    "name": "SEO Cowork Contributors"
+  },
+  "homepage": "https://github.com/LongDZ1204/wp-publish-workflow-kit",
+  "repository": "https://github.com/LongDZ1204/wp-publish-workflow-kit",
+  "license": "MIT",
+  "keywords": ["wordpress", "publishing", "seo", "google-sheets", "workflow"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "WordPress Publish Workflow",
+    "shortDescription": "Publish NEW drafts and AUDIT updates with approval and readback gates.",
+    "longDescription": "Routes Google Sheet and document inputs into safe WordPress NEW or AUDIT workflows, with image preparation, deterministic HTML normalization, approval hashes, draft-only NEW publishing, and WordPress plus Sheet readback.",
+    "developerName": "SEO Cowork Contributors",
+    "category": "Productivity",
+    "capabilities": ["Write"],
+    "defaultPrompt": [
+      "Prepare a NEW WordPress draft from this Sheet row.",
+      "Update this AUDIT article with approval and readback.",
+      "Scaffold a client project for wp-publish."
+    ]
+  }
+}

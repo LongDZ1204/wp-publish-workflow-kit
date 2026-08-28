@@ -1,0 +1,9 @@
+{
+  "Row ID": "WP-AUDIT-001",
+  "Bài / Title": "Existing article title",
+  "Loại bài": "AUDIT",
+  "Nguồn content": "content/approved-update.md",
+  "Slug / URL WP": "https://example.com/existing-article/",
+  "Meta description": "Approved meta description for the existing article.",
+  "Trạng thái": "Chờ chạy"
+}

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_key": "example-site",
+  "ready": false,
+  "pilot_allowed": false,
+  "body_h1_count": 0,
+  "format_policy": "preserve",
+  "max_kb": 150,
+  "max_width": 1200,
+  "seo_meta_adapter": "yoast",
+  "spreadsheet_id": "replace-with-local-sheet-id",
+  "sheet_tab": "WP Publish",
+  "timezone": "UTC",
+  "notes": "Verify REST, Sheet, SEO meta and media round-trips before setting ready=true."
+}
