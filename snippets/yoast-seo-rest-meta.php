@@ -3,7 +3,9 @@
  * Allow authenticated editors to read and write the Yoast SEO title and
  * meta description through the standard WordPress REST API.
  *
- * Install only when Yoast SEO is the site's active SEO plugin.
+ * Install only when Yoast SEO is the site's active SEO plugin AND the guide's
+ * read-only REST check shows the two fields are not already registered
+ * (many recent plugin versions register them out of the box).
  */
 
 defined( 'ABSPATH' ) || exit;

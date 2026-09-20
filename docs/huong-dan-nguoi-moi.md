@@ -141,7 +141,11 @@ Website dùng [Yoast SEO/Rank Math]. Hãy kiểm tra read-only xem SEO title và
 có thể đọc/ghi qua WordPress REST chưa. Chưa được sửa bài thật.
 ```
 
-Nếu AI báo SEO meta chưa mở qua REST, cần cài một snippet nhỏ vào website. Lưu ý quan trọng:
+**Check báo OK là dừng ở đây** — nhiều site chạy Yoast/Rank Math bản mới đã mở sẵn hai trường này
+qua REST, không cần cài gì thêm. Xác nhận chắc chắn nhất là lần ghi SEO meta đầu tiên khi tạo draft
+pilot (Bước 8); rất hiếm khi cần can thiệp sau điểm đó.
+
+Chỉ khi AI báo **chưa mở** qua REST mới cần cài một snippet nhỏ vào website. Lưu ý quan trọng:
 workflow chỉ cầm user role **Editor** nên **AI không thể tự cài** (cài plugin/snippet cần quyền
 Administrator — thứ workflow cố tình không dùng). Bạn hoặc quản trị viên website tự làm, khoảng 5 phút:
 
