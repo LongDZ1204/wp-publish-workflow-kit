@@ -28,8 +28,10 @@ The script opens a native masked password dialog, verifies the account and requi
 refuses Administrator, then stores the credential in ignored
 `CLAUDE.local.md` with file mode `0600`.
 
-`--input-mode auto` is the default and uses a native dialog when available. Use
-`--input-mode terminal` only as a fallback on systems without a supported desktop dialog.
+`--input-mode auto` is the default and uses a native dialog when available (macOS AppleScript,
+Linux zenity). Windows has no native dialog: run with `--input-mode terminal` and paste the
+Application Password at the hidden prompt. Use `--input-mode terminal` on macOS/Linux only as a
+fallback on systems without a supported desktop dialog.
 
 Environment variables remain available for a temporary advanced session:
 

@@ -113,8 +113,13 @@ Sau khi AI chạy lệnh:
 3. Bấm **Lưu & kiểm tra**.
 4. Chờ AI tự báo `OK` hoặc hướng dẫn xử lý lỗi. Không cần trả lời “xong”.
 
-Nếu hộp thoại không xuất hiện, AI mới được chuyển sang `--input-mode terminal` và phải nói rõ người
-dùng cần click vào terminal trước khi paste. Đây chỉ là phương án dự phòng.
+Trên **Windows** không có cửa sổ popup: bạn tự nhập password trong terminal (ký tự vẫn được che).
+AI sẽ đưa sẵn lệnh kèm `--input-mode terminal`; bạn mở PowerShell, dán lệnh, bấm Enter, rồi paste
+password vào dòng `Application Password (input hidden)`. Việc kiểm tra role, chặn Administrator và
+lưu file vẫn do script tự làm như thường.
+
+Trên macOS/Linux, nếu hộp thoại không xuất hiện (ví dụ máy chạy qua SSH), AI mới chuyển sang
+`--input-mode terminal` và phải nói rõ bạn cần click vào terminal trước khi paste.
 
 Không paste mật khẩu vào chat. Không đặt mật khẩu này vào Google Sheet, Google Doc, file context hoặc
 GitHub. `CLAUDE.local.md` đã nằm trong `.gitignore` nên không được đưa lên repository.
