@@ -25,7 +25,7 @@ skills/strong-to-b/             HTML normalization instructions
 tools/strong-to-b/              Deterministic HTML engine
 workflows/wp-publish/           State machine, contracts, scripts and tests
 snippets/                       Yoast/Rank Math REST meta adapters
-templates/                      Safe starter files
+templates/                      Safe starter files (incl. CLAUDE.local.example.md)
 docs/                           Setup and Sheet documentation
 ```
 

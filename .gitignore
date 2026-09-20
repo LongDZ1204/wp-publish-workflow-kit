@@ -6,7 +6,6 @@ __pycache__/
 venv/
 .env
 .env.*
-!.env.example
 CLAUDE.local.md
 
 # Runtime/client artifacts

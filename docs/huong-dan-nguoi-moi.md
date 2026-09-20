@@ -38,6 +38,21 @@ tác tạo hoặc cập nhật bài để xin bạn xác nhận.
 Không cần chuẩn bị bản content riêng trong folder workflow. Google Doc hoặc Markdown là nguồn chính;
 AI sẽ kéo nội dung về khi chạy.
 
+## Yêu cầu về AI & Google
+
+Workflow chạy bằng cách AI đọc/ghi giúp bạn, nên AI cần hai kết nối sau:
+
+- **Google Sheets/Docs**: AI cần connector Google Workspace hoặc quyền truy cập bằng tài khoản Google
+  của bạn. Chưa có connector thì vẫn chạy được với 2 cách thay thế:
+  - Nguồn content: dùng file **Markdown local** thay vì Google Doc (cột `Nguồn content` nhận đường
+    dẫn file trong máy).
+  - Trạng thái Sheet: AI đưa nội dung cần điền từng bước, bạn tự copy vào Google Sheet.
+  Kiểm tra nhanh: hỏi AI "Bạn đọc được Google Sheet này không?" trước khi bắt đầu.
+- **WordPress**: không cần cài thêm gì — script của kit gọi thẳng REST API bằng Application Password
+  đã tạo ở Bước 2.
+
+Mọi thứ khác (Python, thư viện) AI sẽ tự cài theo prompt quick-start.
+
 ## Bước 1 — Tạo WordPress user đúng quyền
 
 Nên tạo một user riêng cho workflow:
@@ -252,6 +267,32 @@ Kết quả đúng:
 
 Chỉ dùng `AUDIT` khi bài đã tồn tại trên WordPress. Workflow phải kéo HTML hiện tại, tạo backup, trình
 phần thay đổi và chờ bạn duyệt trước khi cập nhật.
+
+## Cấu trúc thư mục khi chạy
+
+Mọi thứ nằm trong **một thư mục duy nhất** — bản kit bạn tải về. Hai phần tách bạch:
+
+```
+thu-muc-lam-viec/
+└── wp-publish-workflow-kit/          ← thư mục kit (clone hoặc tải về)
+    │
+    │  PHẦN CÓ SẴN (code, public được)
+    ├── skills/                        ← AI đọc để biết cách làm (5 skill)
+    ├── workflows/                     ← luật + state machine + script
+    ├── templates/                     ← bản mẫu để copy
+    ├── docs/ · snippets/ · tools/
+    │
+    │  PHẦN SINH THÊM (dữ liệu riêng, .gitignore chặn khỏi Git)
+    ├── CLAUDE.local.md                ← bạn tự tạo ở Bước 3 (credential)
+    └── projects/
+        └── ten-client/                ← AI sinh khi setup project
+            ├── context.md                        ← brand fact của client
+            ├── knowledge/publish-context.json    ← khai báo site (body_h1_count,
+            │                                        Yoast/RankMath, Sheet ID, ready)
+            └── content/                          ← ảnh, bundle chờ duyệt, backup audit
+```
+
+Muốn chuyển máy hoặc backup: zip cả thư mục, nhưng **xoá `CLAUDE.local.md` trước** (chỉ giữ ở máy).
 
 ## Quy tắc an toàn cần nhớ
 
