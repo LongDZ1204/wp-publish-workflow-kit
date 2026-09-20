@@ -84,7 +84,7 @@ class GateTests(unittest.TestCase):
     def test_prepared_and_final_gate(self):
         with tempfile.TemporaryDirectory() as tmp:
             bundle = self.make_bundle(Path(tmp))
-            profile = {"ready": True}
+            profile = {"ready": True, "body_h1_count": 1}
             self.assertTrue(GATE.validate(bundle, profile, "prepared")["ok"])
             (bundle / "content.final.html").write_text(
                 '<h1>Article title</h1><p>Text</p><img src="https://example.com/hero.jpg" alt="Useful image">', encoding="utf-8"
@@ -100,16 +100,31 @@ class GateTests(unittest.TestCase):
     def test_explicit_pilot_allows_not_ready_profile(self):
         with tempfile.TemporaryDirectory() as tmp:
             bundle = self.make_bundle(Path(tmp))
-            profile = {"ready": False, "pilot_allowed": True}
+            profile = {"ready": False, "pilot_allowed": True, "body_h1_count": 1}
             self.assertTrue(GATE.validate(bundle, profile, "prepared", allow_pilot=True)["ok"])
 
-    def test_content_must_have_exactly_one_h1(self):
+    def test_h1_count_must_match_declared_ownership(self):
         with tempfile.TemporaryDirectory() as tmp:
             bundle = self.make_bundle(Path(tmp))
             (bundle / "content.prepared.html").write_text(
                 '<p>No heading</p><img src="asset://hero" alt="Useful image">', encoding="utf-8"
             )
             with self.assertRaisesRegex(ValueError, "h1 expected=1 actual=0"):
+                GATE.validate(bundle, {"ready": True, "body_h1_count": 1}, "prepared")
+
+    def test_zero_h1_allowed_when_theme_owns_the_page_h1(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = self.make_bundle(Path(tmp))
+            (bundle / "content.prepared.html").write_text(
+                '<p>Body starts at H2 on themes that render the title as H1</p>'
+                '<img src="asset://hero" alt="Useful image">', encoding="utf-8"
+            )
+            self.assertTrue(GATE.validate(bundle, {"ready": True, "body_h1_count": 0}, "prepared")["ok"])
+
+    def test_missing_body_h1_count_stops(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = self.make_bundle(Path(tmp))
+            with self.assertRaisesRegex(ValueError, "BRAND-MISSING: body_h1_count"):
                 GATE.validate(bundle, {"ready": True}, "prepared")
 
 

@@ -14,7 +14,7 @@ shortcodes, tables, embeds, and media references.
 - Store an immutable backup before any write.
 - Build exact `{old, new}` replacements; every `old` value must match once.
 - Preserve frozen passages and structural element counts.
-- Keep exactly one source H1 in the WordPress body.
+- Preserve the post's existing H1 count; edits never add or remove H1 elements.
 - Stop when WordPress returns HTML, a challenge page, an unexpected status, or ambiguous state.
 - Require explicit approval for the exact prepared artifact.
 - Re-fetch after the write and verify both changed and frozen content.

@@ -18,7 +18,7 @@ https://github.com/LongDZ1204/wp-publish-workflow-kit
 Hãy setup project cho website [điền tên website/domain].
 Chỉ cài và chạy kiểm tra read-only, chưa tạo hoặc cập nhật bài trên WordPress.
 Hỏi tôi lần lượt từng thông tin còn thiếu, mỗi lần giải thích ngắn cách lấy.
-File content luôn có đúng 1 H1 và phải giữ H1 đó trong body WordPress.
+File content luôn có đúng 1 H1. Khi setup, hỏi tôi theme site có in tiêu đề bài thành H1 không để chốt `body_h1_count` (0 hoặc 1).
 Khi hoàn tất, báo rõ READY FOR PILOT hoặc danh sách phần còn thiếu.
 ```
 
@@ -198,14 +198,23 @@ Hai dropdown cần có sẵn:
 
 ## Bước 6 — Chuẩn bị file content có H1
 
-Mỗi bài phải có **đúng một H1**. Workflow lấy H1 từ file content và giữ nguyên H1 đó trong body
-WordPress; không còn bước chọn theme hay body chịu trách nhiệm H1.
+Mỗi file content phải có **đúng một H1**:
 
 - Google Doc: đặt tiêu đề bài bằng style **Heading 1**.
 - Markdown: dùng một dòng bắt đầu bằng `# `.
 - HTML: dùng đúng một cặp `<h1>...</h1>`.
 
 Không dùng thêm H1 thứ hai ở phần thân bài. Các phần lớn tiếp theo dùng H2, rồi H3 nếu cần.
+
+Một trang WordPress chỉ nên có đúng một H1, và H1 đó có thể do theme in ra từ tiêu đề bài. Vì vậy cần
+chốt `body_h1_count` trong `publish-context.json`:
+
+- `0`: theme đã render tiêu đề bài thành H1 của trang (phần lớn theme chuẩn) → body KHÔNG chứa H1,
+  các đề mục bắt đầu bằng H2.
+- `1`: theme không in H1 (một số theme/page builder) → body giữ đúng một H1 từ file content.
+
+Cách kiểm: mở một bài đã có trên site, xem nguồn trang (Ctrl+U) — nếu tiêu đề bài nằm trong `<h1>`
+thì chọn `0`, ngược lại chọn `1`. Gate sẽ dừng nếu số H1 trong body khác con số đã khai báo.
 
 ## Bước 7 — Nhờ AI chạy kiểm tra trước khi demo
 
@@ -214,7 +223,7 @@ Gửi prompt:
 ```text
 Chạy preflight WP Publish cho project [tên project].
 Chỉ kiểm tra: project context, Google Sheet/tab, WordPress REST, quyền post/media,
-H1 trong content và SEO meta của [yoast/rankmath]. Chưa tạo hoặc cập nhật bài.
+H1 trong content, `body_h1_count` đã chốt và SEO meta của [yoast/rankmath]. Chưa tạo hoặc cập nhật bài.
 ```
 
 `Preflight` là vòng kiểm tra trước khi chạy thật. Kết quả cần là `READY FOR PILOT`. Nếu còn thiếu, AI
@@ -252,7 +261,7 @@ Tôi duyệt approval hash [mã]. Tạo WordPress draft, không public.
 Kết quả đúng:
 
 - WordPress có đúng một bài mới ở trạng thái Nháp;
-- body vẫn có đúng một H1 từ file content;
+- body có đúng `body_h1_count` H1 đã khai báo;
 - SEO title và meta description đọc lại đúng;
 - Sheet chuyển sang `Chờ đăng` và có URL draft;
 - chạy lại không tạo bài hoặc ảnh trùng.
@@ -266,7 +275,7 @@ phần thay đổi và chờ bạn duyệt trước khi cập nhật.
 
 1. NEW luôn tạo Nháp, không tự public.
 2. AUDIT luôn backup trước khi sửa.
-3. File content luôn có đúng một H1 và H1 được giữ trong body.
+3. File content luôn có đúng một H1; body giữ đúng `body_h1_count` H1 đã khai báo.
 4. Không gửi mật khẩu vào Sheet, Doc hoặc GitHub.
 5. AI phải dừng xin duyệt trước khi ghi WordPress.
 6. Chỉ gọi là hoàn tất sau khi đọc lại WordPress và Sheet đều khớp.

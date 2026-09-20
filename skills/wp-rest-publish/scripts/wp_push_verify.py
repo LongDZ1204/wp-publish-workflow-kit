@@ -81,12 +81,15 @@ def main():
     ap.add_argument("--yoast-metadesc", default=None,
                     help="Deprecated alias for --seo-adapter yoast --meta-description")
     ap.add_argument("--verify-only", action="store_true")
+    ap.add_argument("--expected-h1", type=int, default=None,
+                    help="Số H1 body site yêu cầu (= body_h1_count trong publish-context). "
+                         "Bỏ qua: không assert H1 (apply-edits đã giữ nguyên số H1 bản gốc).")
     a = ap.parse_args()
 
     base, user, app = load_credential(a.site, a.claude_local)
     content = open(a.html, encoding="utf-8").read()
-    if h1_count(content) != 1:
-        sys.exit(f"ERR: HTML phải có đúng 1 H1; hiện có {h1_count(content)}")
+    if a.expected_h1 is not None and h1_count(content) != a.expected_h1:
+        sys.exit(f"ERR: HTML phải có {a.expected_h1} H1 (body_h1_count của site); hiện có {h1_count(content)}")
     legacy_yoast = bool(a.yoast_title or a.yoast_metadesc)
     adapter = "yoast" if legacy_yoast else a.seo_adapter
     seo_title = a.yoast_title or a.seo_title
@@ -148,9 +151,9 @@ def main():
         return False, "✗ THIẾU CẢ TRÊN content.raw"
 
     ok = True
-    if h1_count(raw) != 1:
+    if a.expected_h1 is not None and raw and h1_count(raw) != a.expected_h1:
         ok = False
-        print(f"✗ content.raw phải có đúng 1 H1; hiện có {h1_count(raw)}")
+        print(f"✗ content.raw phải có {a.expected_h1} H1; hiện có {h1_count(raw)}")
     for key, expected in expected_seo_meta.items():
         if readback_meta.get(key) != expected:
             ok = False

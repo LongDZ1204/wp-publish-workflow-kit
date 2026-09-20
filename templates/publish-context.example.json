@@ -3,6 +3,7 @@
   "site_key": "example-site",
   "ready": false,
   "pilot_allowed": false,
+  "body_h1_count": null,
   "format_policy": "preserve",
   "max_kb": 150,
   "max_width": 1200,

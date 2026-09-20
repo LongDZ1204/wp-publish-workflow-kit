@@ -63,8 +63,9 @@ Complete the brand context and site policy. Keep `ready=false` until all require
 been tested. A one-time pilot is allowed only when `pilot_allowed=true` and the operator explicitly
 approves the pilot.
 
-Source content must contain exactly one H1. The workflow preserves that H1 in the WordPress body and
-the gate stops when the final HTML has zero or multiple H1 elements.
+Source content must contain exactly one H1. The publish context declares `body_h1_count`: 1 when the
+body keeps that H1, 0 when the theme renders the post title as the page H1. The gate stops when the
+final HTML does not match the declared count.
 
 ## 4. Configure the Sheet
 

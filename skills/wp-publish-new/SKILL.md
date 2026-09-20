@@ -101,7 +101,7 @@ uncertain POST; reconcile WordPress first and resume only the same `run_id`.
 ## Completion gate
 
 - Approval hash is current.
-- Final HTML keeps exactly one H1 from the source content.
+- Final HTML matches the profile's `body_h1_count` (0 when the theme's post title is the page H1).
 - Final HTML has no local path, Markdown image marker, or unresolved asset token.
 - WordPress GET `context=edit` matches title, slug, content and status `draft`.
 - The workflow has written and read back the same Sheet row.

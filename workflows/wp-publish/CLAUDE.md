@@ -23,7 +23,7 @@ Workflow gọi các component, không viết lại logic của chúng:
 5. Không retry mù thao tác POST; phải reconcile trạng thái thật trước.
 6. Không tự sửa skill/context từ learning candidate.
 7. Không đổi URL/filename ảnh live trong route audit nếu chưa được duyệt.
-8. Không bỏ hoặc tự sinh H1; source content phải có đúng một H1 và H1 đó ở lại trong body WordPress.
+8. Không bỏ hoặc tự sinh H1; source content phải có đúng một H1. Body giữ đúng `body_h1_count` trong publish-context (0 nếu theme đã in tiêu đề bài thành H1, 1 nếu body chịu trách nhiệm H1).
 
 ## 2. Nguồn sự thật
 
@@ -136,7 +136,7 @@ Một ca chỉ hoàn thành khi:
 
 - Bundle đúng contract, approval còn hiệu lực.
 - Không còn local path, asset token hoặc marker Markdown trong HTML final.
-- HTML final có đúng một H1 lấy từ source content.
+- HTML final có đúng `body_h1_count` H1 theo publish-context.
 - Image gate và strong report xanh.
 - NEW là draft; AUDIT có backup + revision/readback.
 - Không tạo trùng post/media/Sheet row khi rerun.

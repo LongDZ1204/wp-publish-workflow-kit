@@ -8,7 +8,7 @@ Document only verified brand and editorial facts needed by the publishing workfl
 - Target market:
 - Editorial voice:
 - Approved spelling/terminology:
-- Content H1 rule: source files contain exactly one H1 and WordPress keeps it in the body.
+- Content H1 rule: source files contain exactly one H1; `body_h1_count` declares whether the body keeps it (1) or the theme's post title is the page H1 (0).
 - Image naming and alt-text rules:
 - Facts or claims that require operator confirmation:
 

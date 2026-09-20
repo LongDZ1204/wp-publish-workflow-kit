@@ -21,7 +21,7 @@ because a slug exists or is absent.
 
 - `NEW` creates or resumes exactly one WordPress `draft`; it never publishes automatically.
 - `AUDIT` updates one existing post from a fresh `content.raw` snapshot and immutable backup.
-- Every source document must contain exactly one H1; keep that H1 in the WordPress body.
+- Every source document contains exactly one H1. The publish context declares `body_h1_count`: 1 when the body keeps that H1, 0 when the theme renders the post title as the page H1.
 - Both routes require `image-onpage` and deterministic `strong-to-b` normalization.
 - Any external write requires explicit operator approval for the current bundle hash.
 - Completion requires WordPress readback and Google Sheet readback for the same immutable `Row ID`.

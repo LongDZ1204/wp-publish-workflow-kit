@@ -34,7 +34,7 @@ docs/                           Setup and Sheet documentation
 - Python 3.10+
 - A dedicated WordPress Editor account with an Application Password; do not use Administrator
 - Access to Google Sheets and the selected content source
-- A source document containing exactly one H1; the workflow keeps that H1 in the WordPress body
+- A source document containing exactly one H1; the publish context declares `body_h1_count` (1 = body keeps the H1, 0 = the theme's post title is the page H1)
 - `Pillow`, `certifi`, and `beautifulsoup4`; `pytest` for development tests
 
 ## Quick start
@@ -50,7 +50,7 @@ Hãy setup project cho [website/domain]. Chỉ cài và chạy preflight read-on
 Chưa tạo hoặc cập nhật nội dung WordPress. Hỏi tôi từng thông tin còn thiếu, mỗi lần một mục.
 Credential phải dùng user Editor riêng. Hãy chạy wp_setup_credentials.py với hộp thoại mật khẩu;
 chờ lệnh tự trả kết quả, không yêu cầu tôi nhập trong terminal, gửi password qua chat hoặc báo “xong”.
-Mỗi file content có đúng một H1; giữ H1 đó trong body WordPress.
+Mỗi file content có đúng một H1. Site khai báo `body_h1_count`: 0 nếu theme đã in tiêu đề bài thành H1, 1 nếu body giữ H1 đó.
 Kết thúc bằng READY FOR PILOT hoặc danh sách phần còn thiếu.
 ```
 

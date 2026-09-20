@@ -42,6 +42,7 @@ def main():
     raw = open(a.html, encoding="utf-8").read()
     edits = json.load(open(a.edits, encoding="utf-8"))
     orig_len = len(raw)
+    orig_h1 = h1_count(raw)
 
     fails, applied = [], []
     for i, e in enumerate(edits):
@@ -73,8 +74,9 @@ def main():
         sys.exit(1)
 
     count = h1_count(raw)
-    if count != 1:
-        print(f"!!! DỪNG — HTML sau edit phải có đúng 1 H1; hiện có {count}.")
+    if count != orig_h1:
+        print(f"!!! DỪNG — số H1 đổi sau khi áp ({orig_h1} -> {count}). "
+              "AUDIT giữ nguyên cấu trúc H1 của bản gốc (theme đã quyết H1 ở đâu). KHÔNG push.")
         sys.exit(1)
 
     print(f"OK — {len(applied)}/{len(edits)} edit khớp đúng 1 lần. "

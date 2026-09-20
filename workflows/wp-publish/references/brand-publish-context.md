@@ -8,7 +8,7 @@ Workflow load hai lớp:
 `publish-context.md` tối thiểu cần:
 
 - `site_key` và `rest_base`.
-- Source content luôn có đúng một H1; workflow giữ H1 đó trong body WordPress.
+- Source content luôn có đúng một H1. `body_h1_count` ghi rõ body giữ mấy H1: 0 nếu theme render tiêu đề bài thành H1 của trang, 1 nếu body chịu trách nhiệm H1.
 - image `format_policy`, `max_kb`, `max_width`, existing-media policy.
 - default category/tag/author nếu được operator chốt; không có thì Sheet phải cung cấp.
 - `spreadsheet_id`, Sheet tab/range và timezone.

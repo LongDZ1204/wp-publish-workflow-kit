@@ -11,7 +11,7 @@
 
 - [ ] Domain và `site_key` đúng.
 - [ ] Application Password đã được script kiểm tra và lưu vào `CLAUDE.local.md` mode `0600`.
-- [ ] File content có đúng một H1 và H1 được giữ trong body WordPress.
+- [ ] File content có đúng một H1; `body_h1_count` đã chốt (0 nếu theme in tiêu đề bài thành H1, 1 nếu body giữ H1).
 - [ ] `seo_meta_adapter` là `yoast` hoặc `rankmath` và đã test REST.
 - [ ] Category/tag/author mặc định đã chốt hoặc có input.
 - [ ] Media upload, reuse và readback đã test.
