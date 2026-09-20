@@ -80,8 +80,10 @@ ID, tab and timezone in the local project publish context. The workflow must upd
 
 Set `seo_meta_adapter` to `yoast` or `rankmath`. There is no separate SEO-plugin REST password; use
 the WordPress Application Password above. If the two plugin meta fields are not registered with
-`show_in_rest`, install the matching file from `snippets/` through a site-specific plugin, WPCode or
-Code Snippets, then verify the REST schema and a staging round-trip.
+`show_in_rest`, have the site administrator install the matching file from `snippets/` through
+WPCode, Code Snippets or a mu-plugin. Installing code needs Administrator access; the workflow's
+Editor account cannot install plugins or snippets. Then verify the REST schema and a staging
+round-trip.
 
 ## 6. Run checks
 

@@ -141,32 +141,107 @@ Website dùng [Yoast SEO/Rank Math]. Hãy kiểm tra read-only xem SEO title và
 có thể đọc/ghi qua WordPress REST chưa. Chưa được sửa bài thật.
 ```
 
-Nếu AI báo SEO meta chưa mở qua REST, làm theo một trong hai cách:
+Nếu AI báo SEO meta chưa mở qua REST, cần cài một snippet nhỏ vào website. Lưu ý quan trọng:
+workflow chỉ cầm user role **Editor** nên **AI không thể tự cài** (cài plugin/snippet cần quyền
+Administrator — thứ workflow cố tình không dùng). Bạn hoặc quản trị viên website tự làm, khoảng 5 phút:
 
-1. Khuyến nghị: nhờ AI cài đúng snippet trong repository.
-2. Hoặc nhờ quản trị viên website cài thủ công bằng WPCode/Code Snippets.
+**Cách khuyến nghị — plugin WPCode / Code Snippets (không đụng code của theme):**
 
-Prompt cho AI:
+1. Đăng nhập wp-admin bằng tài khoản quản trị.
+2. Vào **Code Snippets → Add Snippet** (chưa có plugin thì cài trước: Plugins → Add New → tìm
+   "WPCode" → Install → Activate).
+3. Chọn **Add Your Custom Code**, loại **PHP Snippet**.
+4. Copy nguyên đoạn mã đúng plugin SEO của site (ở cuối bước này), dán vào, đặt tên
+   `WP Publish SEO REST Meta`.
+5. Chọn chạy toàn website (**Run everywhere**) rồi bật snippet, lưu.
+6. Quay lại chat, nhờ AI chạy lại phép kiểm read-only ở trên cho tới khi báo OK.
 
-```text
-Hãy cài snippet REST phù hợp với plugin SEO của website từ folder snippets/ trong repository.
-Dùng staging nếu có, backup trước, không chạm vào bài viết. Sau khi bật snippet, kiểm tra lại
-quyền đọc/ghi SEO meta và báo kết quả.
+**Cách khác — functions.php / mu-plugin** (nếu không muốn thêm plugin): nhờ quản trị viên dán đoạn
+mã vào `functions.php` của child theme, hoặc lưu thành file trong `wp-content/mu-plugins/`.
+
+Đoạn mã — chỉ cài ĐÚNG MỘT cái tương ứng plugin SEO đang dùng:
+
+<details>
+<summary><strong>Yoast SEO</strong> (bấm để mở — file gốc <code>snippets/yoast-seo-rest-meta.php</code>)</summary>
+
+```php
+<?php
+/**
+ * Allow authenticated editors to read and write the Yoast SEO title and
+ * meta description through the standard WordPress REST API.
+ *
+ * Install only when Yoast SEO is the site's active SEO plugin.
+ */
+
+defined( 'ABSPATH' ) || exit;
+
+add_action(
+	'init',
+	static function () {
+		$keys = array( '_yoast_wpseo_title', '_yoast_wpseo_metadesc' );
+
+		foreach ( array( 'post', 'page' ) as $post_type ) {
+			foreach ( $keys as $key ) {
+				register_post_meta(
+					$post_type,
+					$key,
+					array(
+						'type'              => 'string',
+						'single'            => true,
+						'show_in_rest'      => true,
+						'sanitize_callback' => 'sanitize_text_field',
+						'auth_callback'     => static function ( $allowed, $meta_key, $post_id ) {
+							return current_user_can( 'edit_post', $post_id );
+						},
+					)
+				);
+			}
+		}
+	}
+);
 ```
+</details>
 
-File đúng cho từng plugin:
+<details>
+<summary><strong>Rank Math</strong> (bấm để mở — file gốc <code>snippets/rank-math-rest-meta.php</code>)</summary>
 
-- Yoast SEO: `snippets/yoast-seo-rest-meta.php`.
-- Rank Math: `snippets/rank-math-rest-meta.php`.
+```php
+<?php
+/**
+ * Allow authenticated editors to read and write the Rank Math SEO title and
+ * meta description through the standard WordPress REST API.
+ *
+ * Install only when Rank Math is the site's active SEO plugin.
+ */
 
-Nếu quản trị viên cài bằng WPCode:
+defined( 'ABSPATH' ) || exit;
 
-1. Vào **Code Snippets → Add Snippet**.
-2. Chọn loại **PHP Snippet**.
-3. Copy nội dung file đúng với plugin SEO đang dùng.
-4. Đặt tên `WP Publish SEO REST Meta`.
-5. Chọn chạy toàn website và bật snippet.
-6. Nhờ AI chạy lại kiểm tra read-only.
+add_action(
+	'init',
+	static function () {
+		$keys = array( 'rank_math_title', 'rank_math_description' );
+
+		foreach ( array( 'post', 'page' ) as $post_type ) {
+			foreach ( $keys as $key ) {
+				register_post_meta(
+					$post_type,
+					$key,
+					array(
+						'type'              => 'string',
+						'single'            => true,
+						'show_in_rest'      => true,
+						'sanitize_callback' => 'sanitize_text_field',
+						'auth_callback'     => static function ( $allowed, $meta_key, $post_id ) {
+							return current_user_can( 'edit_post', $post_id );
+						},
+					)
+				);
+			}
+		}
+	}
+);
+```
+</details>
 
 Snippet chỉ mở hai trường SEO cho user đã có quyền sửa bài; nó không chứa và không cần Application
 Password. WordPress yêu cầu post meta được đăng ký với `show_in_rest` thì mới đọc/ghi được qua REST.
