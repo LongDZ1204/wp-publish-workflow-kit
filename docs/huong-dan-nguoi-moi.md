@@ -97,7 +97,9 @@ Credential chỉ là một khối văn bản trong file `CLAUDE.local.md` ở th
    - App Password dán nguyên xi như WordPress cấp, kể cả các dấu cách.
 3. Lưu file. Xong — mọi script của kit tự đọc file này, password không bao giờ nằm trên dòng lệnh.
 
-Dùng nhiều site: thêm mỗi site một khối như trên trong cùng file. Muốn thêm vòng kiểm tra tự động
+Nếu thư mục đã có sẵn `CLAUDE.local.md` (site trước đó đã làm): KHÔNG ghi đè file — chỉ thêm
+một khối mẫu vào cuối file rồi điền giá trị site mới. Dùng nhiều site thì mỗi site một khối
+trong cùng file, script tự chọn khối theo tên site hoặc domain. Muốn thêm vòng kiểm tra tự động
 (đăng nhập + role, chặn Administrator) thì chạy
 `python3 workflows/wp-publish/scripts/wp_setup_credentials.py --site-key ten-ngan --url https://domain.com --user wp-publish`
 — không bắt buộc.
