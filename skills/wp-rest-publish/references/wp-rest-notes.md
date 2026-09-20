@@ -20,9 +20,8 @@ bài đó. Mặc định tạo user riêng role Editor; không dùng Administrat
 `edit_others_posts` và `edit_published_posts`, đủ cho NEW draft + AUDIT bài hiện có. HTTP 200 ở
 `context=edit` = auth OK.
 
-Chạy `workflows/wp-publish/scripts/wp_setup_credentials.py --input-mode dialog` để nhập password qua
-hộp thoại riêng, kiểm role/capability rồi lưu file local mode `0600`. Agent chờ process tự trả kết quả;
-không yêu cầu user báo “xong” từ chat.
+Credential dán tay vào `CLAUDE.local.md` theo `templates/CLAUDE.local.example.md`; script
+`wp_setup_credentials.py` là tuỳ chọn có kiểm tra role/capability. Agent không nhận password qua chat.
 
 ## `modified`, revision, `date`
 

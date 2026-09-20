@@ -48,8 +48,8 @@ https://github.com/LongDZ1204/wp-publish-workflow-kit
 
 Hãy setup project cho [website/domain]. Chỉ cài và chạy preflight read-only.
 Chưa tạo hoặc cập nhật nội dung WordPress. Hỏi tôi từng thông tin còn thiếu, mỗi lần một mục.
-Credential phải dùng user Editor riêng. Hãy chạy wp_setup_credentials.py với hộp thoại mật khẩu;
-chờ lệnh tự trả kết quả, không yêu cầu tôi nhập trong terminal, gửi password qua chat hoặc báo “xong”.
+Credential phải dùng user Editor riêng. KHÔNG nhận password qua chat; hướng dẫn tôi tự dán khối
+credential vào CLAUDE.local.md theo templates/CLAUDE.local.example.md (Bước 3 của docs/huong-dan-nguoi-moi.md).
 Mỗi file content có đúng một H1. Site khai báo `body_h1_count`: 0 nếu theme đã in tiêu đề bài thành H1, 1 nếu body giữ H1 đó.
 Kết thúc bằng READY FOR PILOT hoặc danh sách phần còn thiếu.
 ```

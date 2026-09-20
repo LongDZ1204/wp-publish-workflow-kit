@@ -41,9 +41,10 @@ Workflow gọi các component, không viết lại logic của chúng:
 Đọc [bundle-contract.md](references/bundle-contract.md), [sheet-schema.md](references/sheet-schema.md)
 và [state-machine.md](references/state-machine.md) trước mỗi ca chạy. Project mới phải được scaffold theo
 [project-folders.md](references/project-folders.md) bằng `scripts/wp_scaffold_project.py`.
-Credential phải được setup bằng `scripts/wp_setup_credentials.py --input-mode dialog`: user riêng
-role Editor, hộp thoại password che ký tự, REST capability check và file local mode `0600`. Chờ process
-tự trả `OK`/`STOP`; không nhận password qua chat, không bắt user báo “xong” hay đọc terminal.
+Credential nằm trong `CLAUDE.local.md` (gitignored), format theo `templates/CLAUDE.local.example.md`:
+user riêng role Editor, mỗi site một khối `### <site> WordPress (REST API)`. Operator tự dán; script
+`scripts/wp_setup_credentials.py` là tuỳ chọn có kiểm tra role. Không nhận password qua chat, không
+đưa password vào command line.
 
 ## 3. Pipeline bắt buộc
 

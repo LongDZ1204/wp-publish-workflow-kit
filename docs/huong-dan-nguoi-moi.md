@@ -5,7 +5,8 @@ Bài mới luôn được tạo ở trạng thái **Nháp** để bạn kiểm t
 có và luôn tạo bản backup trước khi sửa.
 
 Bạn không cần tự gõ lệnh. Cách dễ nhất là gửi link GitHub cho Codex hoặc một AI có thể thao tác trên
-máy, rồi để AI cài và kiểm tra từng bước.
+máy, rồi để AI cài và kiểm tra từng bước. Riêng bước lưu Application Password (Bước 3) bạn tự mở file
+và dán theo template — không cần lệnh, không cần AI.
 
 ## Cách nhanh nhất: nhờ AI cài
 
@@ -19,6 +20,7 @@ Hãy setup project cho website [điền tên website/domain].
 Chỉ cài và chạy kiểm tra read-only, chưa tạo hoặc cập nhật bài trên WordPress.
 Hỏi tôi lần lượt từng thông tin còn thiếu, mỗi lần giải thích ngắn cách lấy.
 File content luôn có đúng 1 H1. Khi setup, hỏi tôi theme site có in tiêu đề bài thành H1 không để chốt `body_h1_count` (0 hoặc 1).
+Application Password tôi tự dán vào CLAUDE.local.md theo template ở Bước 3; bạn không nhận password qua chat.
 Khi hoàn tất, báo rõ READY FOR PILOT hoặc danh sách phần còn thiếu.
 ```
 
@@ -73,64 +75,37 @@ Làm lần lượt:
 4. Nhập tên dễ nhớ, ví dụ `WP Publish Workflow`.
 5. Bấm **Add New Application Password** hoặc **Generate**.
 6. Copy mật khẩu ngay. WordPress chỉ hiển thị đầy đủ một lần.
-7. Giữ mật khẩu trong clipboard và chuyển sang bước setup tự động bên dưới.
+7. Giữ mật khẩu trong clipboard và chuyển sang bước lưu bên dưới.
 
-## Bước 3 — Để AI lưu và kiểm tra credential
+## Bước 3 — Tự dán Application Password vào file bảo mật (không cần AI)
 
-Repository có sẵn script setup an toàn. Script sẽ:
+Credential chỉ là một khối văn bản trong file `CLAUDE.local.md` ở thư mục gốc kit — file này đã bị
+`.gitignore` chặn nên không bao giờ lên Git. Bạn tự làm, không cần AI hay lệnh nào:
 
-- mở một hộp thoại riêng để nhập password, ký tự được che;
-- kiểm tra đăng nhập WordPress;
-- xác nhận user có đủ quyền và từ chối Administrator;
-- lưu credential vào `CLAUDE.local.md`;
-- đặt quyền file `0600`, nghĩa là chỉ user trên máy hiện tại được đọc và ghi file.
+1. Mở `templates/CLAUDE.local.example.md`, copy toàn bộ nội dung thành file mới `CLAUDE.local.md`
+   ở thư mục gốc kit (Notepad hoặc TextEdit đều mở được).
+2. Điền giá trị thật vào khối mẫu:
 
-Gửi AI prompt này:
+   ```markdown
+   ### ten-ngan WordPress (REST API)
+   - URL: https://domain.com
+   - User: wp-publish
+   - App Password: xxxx xxxx xxxx xxxx xxxx xxxx
+   ```
 
-```text
-Hãy chạy công cụ setup credential của WP Publish cho:
-- site-key: [tên ngắn, ví dụ vibim]
-- URL: [https://domain.com]
-- WordPress user: [username Editor vừa tạo]
+   - `ten-ngan`: tên ngắn bạn đặt cho site (dùng lại ở các bước sau).
+   - App Password dán nguyên xi như WordPress cấp, kể cả các dấu cách.
+3. Lưu file. Xong — mọi script của kit tự đọc file này, password không bao giờ nằm trên dòng lệnh.
 
-Hãy chạy script bằng --input-mode dialog và chờ chính lệnh trả kết quả.
-Không yêu cầu tôi nhập trong terminal, gửi password qua chat, trả lời “xong” hoặc tự đọc log.
-Sau khi hộp thoại đóng, hãy tự kiểm tra role/quyền và báo kết quả.
-```
+Dùng nhiều site: thêm mỗi site một khối như trên trong cùng file. Muốn thêm vòng kiểm tra tự động
+(đăng nhập + role, chặn Administrator) thì chạy
+`python3 workflows/wp-publish/scripts/wp_setup_credentials.py --site-key ten-ngan --url https://domain.com --user wp-publish`
+— không bắt buộc.
 
-AI sẽ chạy lệnh tương tự sau; người dùng không cần tự gõ:
+Không dán mật khẩu vào chat, Google Sheet, Google Doc hay file nào khác.
 
-```bash
-python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
-  --site-key vibim --url https://vibimglobal.com --user wp-publish \
-  --input-mode dialog
-```
-
-Sau khi AI chạy lệnh:
-
-1. Một cửa sổ **WP Publish Setup** xuất hiện.
-2. Paste Application Password vào ô có ký tự được che.
-3. Bấm **Lưu & kiểm tra**.
-4. Chờ AI tự báo `OK` hoặc hướng dẫn xử lý lỗi. Không cần trả lời “xong”.
-
-Trên **Windows** không có cửa sổ popup: bạn tự nhập password trong terminal (ký tự vẫn được che).
-AI sẽ đưa sẵn lệnh kèm `--input-mode terminal`; bạn mở PowerShell, dán lệnh, bấm Enter, rồi paste
-password vào dòng `Application Password (input hidden)`. Việc kiểm tra role, chặn Administrator và
-lưu file vẫn do script tự làm như thường.
-
-Trên macOS/Linux, nếu hộp thoại không xuất hiện (ví dụ máy chạy qua SSH), AI mới chuyển sang
-`--input-mode terminal` và phải nói rõ bạn cần click vào terminal trước khi paste.
-
-Không paste mật khẩu vào chat. Không đặt mật khẩu này vào Google Sheet, Google Doc, file context hoặc
-GitHub. `CLAUDE.local.md` đã nằm trong `.gitignore` nên không được đưa lên repository.
-
-Nếu không thấy mục **Application Passwords**, kiểm tra ba việc:
-
-- website đang dùng HTTPS;
-- WordPress là phiên bản 5.6 trở lên;
-- plugin bảo mật hoặc quản trị viên không tắt Application Passwords.
-
-Tài liệu gốc: [WordPress Application Passwords](https://developer.wordpress.org/advanced-administration/security/application-passwords/).
+Nếu Bước 7 (preflight) báo lỗi đăng nhập, mở lại file kiểm ba thứ: URL đúng chưa, user đúng chưa,
+App Password copy đủ chưa (WordPress chỉ hiện password một lần — thiếu thì tạo password mới).
 
 ## Bước 4 — Chọn Yoast SEO hoặc Rank Math
 

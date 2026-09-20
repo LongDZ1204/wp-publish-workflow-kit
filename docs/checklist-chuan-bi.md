@@ -10,7 +10,7 @@
 ## Website
 
 - [ ] Domain và `site_key` đúng.
-- [ ] Application Password đã được script kiểm tra và lưu vào `CLAUDE.local.md` mode `0600`.
+- [ ] Khối credential đã dán đúng format vào `CLAUDE.local.md` (URL/User/App Password, user role Editor).
 - [ ] File content có đúng một H1; `body_h1_count` đã chốt (0 nếu theme in tiêu đề bài thành H1, 1 nếu body giữ H1).
 - [ ] `seo_meta_adapter` là `yoast` hoặc `rankmath` và đã test REST.
 - [ ] Category/tag/author mặc định đã chốt hoặc có input.

@@ -26,7 +26,8 @@ python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
 
 The script opens a native masked password dialog, verifies the account and required capabilities,
 refuses Administrator, then stores the credential in ignored
-`CLAUDE.local.md` with file mode `0600`.
+`CLAUDE.local.md` with file mode `0600`. This validated setup is optional: pasting the block from
+`templates/CLAUDE.local.example.md` into `CLAUDE.local.md` works identically for the scripts.
 
 `--input-mode auto` is the default and uses a native dialog when available (macOS AppleScript,
 Linux zenity). Windows has no native dialog: run with `--input-mode terminal` and paste the
