@@ -65,3 +65,16 @@ không yêu cầu user báo “xong” từ chat.
 - Payload có ký tự unicode → gửi JSON UTF-8 (script đã lo). Không cần escape thủ công.
 - CDN/cache (LiteSpeed, Cloudflare): verify live có thể trễ vài giây–phút. Dùng cache-bust query; nếu
   vẫn thấy bản cũ, chờ rồi `--verify-only`.
+
+## Batch cleanup nhiều bài
+
+Khi cần dọn markup rác (attr/class sinh ra từ page builder) trên NHIỀU bài cùng lúc, quy trình an toàn:
+
+- Inventory trước, detector sau: quét toàn corpus mọi attr (`\s[a-z-]+="`) và class token, chốt
+  removal list + **whitelist chức năng** (VD `data-text-limit` = nén content, `is-at-scroll-*` = state
+  bảng cuộn, `data-src`, counter widget) rồi MỚI viết transform. Attr lạ chỉ xuất hiện ở 1 page →
+  nghi chức năng trước, rác sau (grep xem script/CSS nào đọc nó trên live).
+- Match bài theo **post ID / `link`**, không theo slug (plugin đổi permalink làm URL ≠ slug WP).
+- Audit + đếm rác trên **`content.raw`**; `rendered` sinh false positive (wpautop + markup render-time
+  như `<style>`, form plugin, `<p>` rỗng không tồn tại trong DB).
+- Fetch fresh + so `modified` ngay trước mỗi lượt push — luôn giả định có người khác đang sửa song song.
