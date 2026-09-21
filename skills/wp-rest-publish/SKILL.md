@@ -46,7 +46,7 @@ From the repository root:
 ```bash
 python3 skills/wp-rest-publish/scripts/wp_fetch.py \
   --site '<site-key>' --slug '<slug>' --out '<workdir>' \
-  --backup 'projects/<client>/content/_audit-snapshots'
+  --backup 'projects/<client>/content/<content-type>/<slug>/backups'
 
 python3 skills/wp-rest-publish/scripts/wp_apply_edits.py \
   --html '<workdir>/<post>.raw.html' --edits edits.json \

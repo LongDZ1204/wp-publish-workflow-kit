@@ -1,15 +1,48 @@
 {
-  "version": 1,
+  "version": 2,
   "site_key": "example-site",
-  "ready": false,
+  "tracker": {
+    "type": "none"
+  },
   "pilot_allowed": false,
-  "body_h1_count": null,
-  "format_policy": "preserve",
-  "max_kb": 150,
-  "max_width": 1200,
-  "seo_meta_adapter": null,
-  "spreadsheet_id": "replace-with-local-sheet-id",
-  "sheet_tab": "WP Publish",
+  "content_profiles": {
+    "blog": {
+      "endpoint": "posts",
+      "post_type": "post",
+      "ready": false,
+      "body_h1_count": null,
+      "html_policy": "clean_article",
+      "required_fields": ["title", "content", "slug"],
+      "required_capabilities": ["edit_posts", "upload_files"],
+      "image_policy": {"format_policy": "preserve", "max_kb": 150, "max_width": 1200},
+      "seo_meta_adapter": null,
+      "schema_hash": null
+    },
+    "service-page": {
+      "endpoint": "pages",
+      "post_type": "page",
+      "ready": false,
+      "body_h1_count": null,
+      "html_policy": "preserve_builder",
+      "required_fields": ["title", "content", "slug"],
+      "required_capabilities": ["edit_pages", "upload_files"],
+      "image_policy": {"format_policy": "preserve", "max_kb": 150, "max_width": 1200},
+      "seo_meta_adapter": null,
+      "schema_hash": null
+    },
+    "product": {
+      "endpoint": "product",
+      "post_type": "product",
+      "ready": false,
+      "body_h1_count": null,
+      "html_policy": "preserve_builder",
+      "required_fields": ["title", "content", "slug"],
+      "required_capabilities": ["edit_products", "upload_files"],
+      "image_policy": {"format_policy": "preserve", "max_kb": 150, "max_width": 1200},
+      "seo_meta_adapter": null,
+      "schema_hash": null
+    }
+  },
   "timezone": "UTC",
-  "notes": "Verify REST, Sheet, SEO meta and media round-trips before setting ready=true."
+  "notes": "Run the read-only scan and confirm each content profile before enabling writes."
 }

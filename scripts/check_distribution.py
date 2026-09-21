@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 
@@ -22,8 +23,16 @@ LOCAL_HOME = re.compile(r"/(?:Users|home)/[^/\s]+/")
 
 def main() -> int:
     errors: list[str] = []
-    for path in ROOT.rglob("*"):
-        if not path.is_file() or ".git" in path.parts:
+    try:
+        listed = subprocess.run(
+            ["git", "ls-files", "--cached"],
+            cwd=ROOT, check=True, capture_output=True, text=True,
+        ).stdout.splitlines()
+        paths = [ROOT / name for name in listed]
+    except (OSError, subprocess.CalledProcessError):
+        paths = [path for path in ROOT.rglob("*") if path.is_file() and ".git" not in path.parts]
+    for path in paths:
+        if not path.is_file():
             continue
         rel = path.relative_to(ROOT)
         if path.name in FORBIDDEN_NAMES:

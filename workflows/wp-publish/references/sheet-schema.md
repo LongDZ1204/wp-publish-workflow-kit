@@ -1,6 +1,8 @@
-# Google Sheet contract
+# Optional Google Sheet tracker contract
 
-Sheet là input + operational tracker, không chứa full content.
+Sheet is an optional input adapter and operational tracker. Core publishing works with
+`tracker.type=none`. When enabled, the row is normalized to the v2 job contract and the workflow must
+complete writeback/readback by immutable Row ID.
 
 ## Visible columns
 
@@ -9,7 +11,7 @@ Sheet là input + operational tracker, không chứa full content.
 | `Row ID` | workflow | khóa immutable, tự sinh, có thể ẩn |
 | `Bài / Title` | operator | tiêu đề dự kiến |
 | `Loại bài` | operator | chỉ `NEW` hoặc `AUDIT`; workflow không tự đổi |
-| `Nguồn content` | operator | Google Doc URL/ID hoặc local Markdown path |
+| `Nguồn content` | operator | Google Doc URL/ID, local Markdown path or local HTML path |
 | `Slug / URL WP` | operator | NEW nhập exact slug; AUDIT nhập exact URL hiện tại |
 | `Meta description` | operator | meta cần đẩy; adapter site quyết định khả năng ghi REST |
 | `Ngày public dự kiến` | operator | input lịch, không phải thời gian public thực tế |

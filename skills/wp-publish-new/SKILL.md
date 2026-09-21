@@ -16,7 +16,7 @@ Read, in order:
 1. `workflows/wp-publish/CLAUDE.md`
 2. `workflows/wp-publish/references/bundle-contract.md`
 3. `projects/<client>/context.md`
-4. `projects/<client>/knowledge/publish-context.md`
+4. `projects/<client>/publish-context.json` (select the job's confirmed `content_type` profile)
 
 Do not run a write command unless the site publish context has `ready=true`. The only exception is a
 one-time, operator-approved draft pilot when the profile has `pilot_allowed=true`; pass `--pilot` to
@@ -29,9 +29,9 @@ both the gate and executor. A pilot can never publish the post.
   one `source.snapshot.md` plus its checksum; it does not keep successive draft versions.
 - A local Markdown source is not copied. Its absolute path and checksum are stored in
   `source-lock.json`.
-- Images live in `projects/<client>/content/06-assets/`; the bundle only stores mappings.
+- Images live with the item under `projects/<client>/content/<content-type>/<slug>/assets/`; the bundle only stores mappings.
 - The publish-ready artifact lives in
-  `projects/<client>/content/07-publish-ready/<slug>/`.
+  `projects/<client>/content/<content-type>/<slug>/bundle/`.
 
 ## Prepare and approve
 
@@ -58,7 +58,7 @@ python3 workflows/wp-publish/scripts/wp_strong.py \
   --report '<bundle-dir>/transform-report.json'
 
 python3 skills/wp-publish-new/scripts/wp_gate.py \
-  --bundle '<bundle-dir>' --profile 'projects/<client>/knowledge/publish-context.json' \
+  --bundle '<bundle-dir>' --profile 'projects/<client>/publish-context.json' \
   --phase prepared
 ```
 
@@ -80,7 +80,7 @@ Always run the dry plan first:
 ```bash
 python3 skills/wp-publish-new/scripts/wp_push_draft.py \
   --bundle '<bundle-dir>' --site-key '<site>' \
-  --profile 'projects/<client>/knowledge/publish-context.json'
+  --profile 'projects/<client>/publish-context.json'
 ```
 
 Then, only for the same approved hash:
@@ -88,7 +88,7 @@ Then, only for the same approved hash:
 ```bash
 python3 skills/wp-publish-new/scripts/wp_push_draft.py \
   --bundle '<bundle-dir>' --site-key '<site>' \
-  --profile 'projects/<client>/knowledge/publish-context.json' --execute \
+  --profile 'projects/<client>/publish-context.json' --execute \
   --approval-hash '<sha256>'
 ```
 

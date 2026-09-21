@@ -7,7 +7,7 @@ description: "Audit and prepare existing article images for on-page SEO: invento
 
 Tối ưu ảnh **có sẵn** và sinh `image-manifest.json` để workflow publish tiêu thụ. Đọc
 [`standards.md`](standards.md) cho chuẩn chung và brand/site overrides trong
-`projects/<client>/context.md` + `projects/<client>/knowledge/publish-context.md`.
+`projects/<client>/context.md` plus the selected profile in `projects/<client>/publish-context.json`.
 
 ## Hai mode
 
@@ -28,7 +28,7 @@ JSON gồm `profile` và `images`. Mỗi image cần `asset_id`, `alt` (trừ de
   "images": [
     {
       "asset_id": "hero",
-      "source": "projects/client/content/06-assets/hero.jpg",
+      "source": "projects/client/content/blog/example/assets/hero.jpg",
       "filename": "editorial-review-workflow.jpg",
       "heading": "Editorial review workflow",
       "alt": "Editor reviewing article structure before WordPress publication",
@@ -46,8 +46,8 @@ Alt/caption là quyết định semantic: phải xem ảnh thật, heading và b
 ```bash
 python3 skills/image-onpage/scripts/image_prepare.py \
   --mode prepare-new --request image-request.json \
-  --output-dir projects/<client>/content/07-publish-ready/<slug>/images-prepared \
-  --manifest projects/<client>/content/07-publish-ready/<slug>/image-manifest.json
+  --output-dir projects/<client>/content/<content-type>/<slug>/assets/prepared \
+  --manifest projects/<client>/content/<content-type>/<slug>/bundle/image-manifest.json
 ```
 
 Script:

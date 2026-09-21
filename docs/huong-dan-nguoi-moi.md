@@ -1,6 +1,6 @@
 # Hướng dẫn cài WP Publish cho người mới
 
-WP Publish giúp lấy bài từ Google Doc hoặc file Markdown, chuẩn bị ảnh và đưa bài lên WordPress.
+WP Publish giúp lấy bài từ Google Doc, file Markdown hoặc HTML, chuẩn bị ảnh và đưa bài lên WordPress.
 Bài mới luôn được tạo ở trạng thái **Nháp** để bạn kiểm tra trước. Bài audit chỉ cập nhật đúng bài đã
 có và luôn tạo bản backup trước khi sửa.
 
@@ -19,7 +19,9 @@ https://github.com/LongDZ1204/wp-publish-workflow-kit
 Hãy setup project cho website [điền tên website/domain].
 Chỉ cài và chạy kiểm tra read-only, chưa tạo hoặc cập nhật bài trên WordPress.
 Hỏi tôi lần lượt từng thông tin còn thiếu, mỗi lần giải thích ngắn cách lấy.
-File content luôn có đúng 1 H1. Khi setup, hỏi tôi theme site có in tiêu đề bài thành H1 không để chốt `body_h1_count` (0 hoặc 1).
+Sau khi kết nối, chạy site scan read-only rồi đề xuất profile riêng cho blog/service-page/product.
+Hỏi tôi xác nhận field, H1 ownership, HTML policy, SEO meta, ảnh và quyền còn thiếu cho loại đầu tiên.
+Google Sheet là tùy chọn; để tracker.type=none nếu tôi chưa dùng.
 Application Password tôi tự dán vào CLAUDE.local.md theo template ở Bước 3; bạn không nhận password qua chat.
 Khi hoàn tất, báo rõ READY FOR PILOT hoặc danh sách phần còn thiếu.
 ```
@@ -27,27 +29,22 @@ Khi hoàn tất, báo rõ READY FOR PILOT hoặc danh sách phần còn thiếu.
 `Read-only` nghĩa là chỉ đọc và kiểm tra kết nối, chưa ghi gì lên website. AI cần dừng trước mọi thao
 tác tạo hoặc cập nhật bài để xin bạn xác nhận.
 
-## Bạn cần chuẩn bị 5 thứ
+## Bạn cần chuẩn bị 4 thứ
 
 1. URL website, ví dụ `https://example.com`.
 2. Một WordPress user riêng có role Editor và một Application Password.
-3. Link Google Sheet cùng tên tab quản lý bài.
-4. Link Google Doc hoặc file Markdown chứa nội dung.
-5. Tên plugin SEO đang dùng: **Yoast SEO** hoặc **Rank Math**.
+3. Link Google Doc, file Markdown hoặc file HTML chứa nội dung và các ảnh đi kèm.
+4. Tên plugin SEO đang dùng: **Yoast SEO** hoặc **Rank Math**.
 
-Không cần chuẩn bị bản content riêng trong folder workflow. Google Doc hoặc Markdown là nguồn chính;
-AI sẽ kéo nội dung về khi chạy.
+Google Sheet không bắt buộc. Bạn có thể bật sau nếu cần quản lý trạng thái hàng loạt.
 
 ## Yêu cầu về AI & Google
 
-Workflow chạy bằng cách AI đọc/ghi giúp bạn, nên AI cần hai kết nối sau:
+Workflow chạy bằng cách AI đọc/ghi giúp bạn:
 
-- **Google Sheets/Docs**: AI cần connector Google Workspace hoặc quyền truy cập bằng tài khoản Google
-  của bạn. Chưa có connector thì vẫn chạy được với 2 cách thay thế:
-  - Nguồn content: dùng file **Markdown local** thay vì Google Doc (cột `Nguồn content` nhận đường
-    dẫn file trong máy).
-  - Trạng thái Sheet: AI đưa nội dung cần điền từng bước, bạn tự copy vào Google Sheet.
-  Kiểm tra nhanh: hỏi AI "Bạn đọc được Google Sheet này không?" trước khi bắt đầu.
+- **Google Docs** chỉ cần connector khi dùng link Doc; bạn luôn có thể xuất Doc thành HTML/Markdown
+  hoặc cung cấp file local.
+- **Google Sheets** chỉ cần connector khi bạn bật tracker; không có Sheet vẫn chạy đầy đủ.
 - **WordPress**: không cần cài thêm gì — script của kit gọi thẳng REST API bằng Application Password
   đã tạo ở Bước 2.
 
@@ -252,10 +249,10 @@ Password. WordPress yêu cầu post meta được đăng ký với `show_in_rest
 Xem [WordPress REST meta guide](https://developer.wordpress.org/rest-api/extending-the-rest-api/modifying-responses/#read-and-write-a-post-meta-field-in-post-responses)
 và [Yoast REST API](https://developer.yoast.com/customization/apis/rest-api/).
 
-## Bước 5 — Chuẩn bị Google Sheet
+## Bước 5 — Chuẩn bị Google Sheet (tùy chọn)
 
-Dùng 11 cột trong [Google Sheet template](google-sheet-template.md). Bạn chỉ cần nhập các cột nội dung;
-workflow tự cập nhật các cột theo dõi.
+Nếu chưa cần Sheet, bỏ qua bước này và giữ `tracker.type=none`. Khi cần quản lý hàng loạt, dùng 11
+cột trong [Google Sheet template](google-sheet-template.md); workflow tự cập nhật các cột theo dõi.
 
 Hai dropdown cần có sẵn:
 
@@ -272,9 +269,10 @@ Hai dropdown cần có sẵn:
 | `Hoàn tất` | Bài đã đăng hoặc bài AUDIT đã cập nhật và kiểm tra xong |
 | `Cần xử lý` | Workflow dừng; xem lý do trong cột `Note` |
 
-## Bước 6 — Chuẩn bị file content có H1
+## Bước 6 — Chuẩn bị content và ảnh
 
-Mỗi file content phải có **đúng một H1**:
+Bạn có thể đưa Google Doc, Markdown hoặc HTML, miễn nội dung và ảnh đủ để chuẩn bị bài. Bản HTML cuối
+cùng phải tuân theo H1 ownership đã xác nhận cho content type:
 
 - Google Doc: đặt tiêu đề bài bằng style **Heading 1**.
 - Markdown: dùng một dòng bắt đầu bằng `# `.
@@ -298,8 +296,9 @@ Gửi prompt:
 
 ```text
 Chạy preflight WP Publish cho project [tên project].
-Chỉ kiểm tra: project context, Google Sheet/tab, WordPress REST, quyền post/media,
-H1 trong content, `body_h1_count` đã chốt và SEO meta của [yoast/rankmath]. Chưa tạo hoặc cập nhật bài.
+Chỉ kiểm tra: project context, WordPress REST, endpoint/field/quyền post-media,
+H1 ownership, HTML policy, ảnh và SEO meta của [yoast/rankmath]. Nếu có tracker thì kiểm tra thêm
+Google Sheet/tab. Chưa tạo hoặc cập nhật bài.
 ```
 
 `Preflight` là vòng kiểm tra trước khi chạy thật. Kết quả cần là `READY FOR PILOT`. Nếu còn thiếu, AI
@@ -307,7 +306,7 @@ phải nêu đúng phần thiếu và hướng dẫn bạn lấy hoặc sửa ph
 
 ## Bước 8 — Chạy demo NEW an toàn
 
-Tạo một dòng test trên Sheet:
+Tạo một job NEW test trực tiếp; hoặc tạo một dòng Sheet nếu bạn đã bật tracker:
 
 | Cột | Giá trị mẫu |
 |---|---|
@@ -321,7 +320,7 @@ Tạo một dòng test trên Sheet:
 Đầu tiên chỉ chuẩn bị và dừng để duyệt:
 
 ```text
-Chạy WP Publish cho Row ID [row-id] theo route NEW.
+Chạy WP Publish cho job [job-id hoặc Row ID] theo route NEW.
 Chỉ chuẩn bị bundle và dừng ở Chờ xác nhận; chưa ghi WordPress.
 ```
 
@@ -339,7 +338,7 @@ Kết quả đúng:
 - WordPress có đúng một bài mới ở trạng thái Nháp;
 - body có đúng `body_h1_count` H1 đã khai báo;
 - SEO title và meta description đọc lại đúng;
-- Sheet chuyển sang `Chờ đăng` và có URL draft;
+- nếu có Sheet, dòng chuyển sang `Chờ đăng` và có URL draft;
 - chạy lại không tạo bài hoặc ảnh trùng.
 
 ## Khi nào dùng AUDIT?
@@ -366,9 +365,9 @@ thu-muc-lam-viec/
     └── projects/
         └── ten-client/                ← AI sinh khi setup project
             ├── context.md                        ← brand fact của client
-            ├── knowledge/publish-context.json    ← khai báo site (body_h1_count,
-            │                                        Yoast/RankMath, Sheet ID, ready)
-            └── content/                          ← ảnh, bundle chờ duyệt, backup audit
+            ├── publish-context.json              ← profile blog/service/product
+            ├── scans/                            ← kết quả scan read-only + đề xuất
+            └── content/                          ← tách blog/service-page/product
 ```
 
 Muốn chuyển máy hoặc backup: zip cả thư mục, nhưng **xoá `CLAUDE.local.md` trước** (chỉ giữ ở máy).
@@ -380,7 +379,7 @@ Muốn chuyển máy hoặc backup: zip cả thư mục, nhưng **xoá `CLAUDE.l
 3. File content luôn có đúng một H1; body giữ đúng `body_h1_count` H1 đã khai báo.
 4. Không gửi mật khẩu vào Sheet, Doc hoặc GitHub.
 5. AI phải dừng xin duyệt trước khi ghi WordPress.
-6. Chỉ gọi là hoàn tất sau khi đọc lại WordPress và Sheet đều khớp.
+6. Chỉ gọi là hoàn tất sau khi đọc lại WordPress và tracker (nếu đã bật) đều khớp.
 
 Phần cài thủ công dành cho người kỹ thuật nằm ở [setup.md](setup.md). Checklist ngắn nằm ở
 [checklist-chuan-bi.md](checklist-chuan-bi.md).

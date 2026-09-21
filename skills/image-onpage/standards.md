@@ -1,6 +1,7 @@
 # Image preparation standards
 
-Project-specific rules in `projects/<client>/knowledge/publish-context.json` override these defaults.
+Project-specific image rules in the selected profile inside `projects/<client>/publish-context.json`
+override these defaults.
 
 ## Filename
 

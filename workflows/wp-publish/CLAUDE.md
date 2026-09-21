@@ -1,149 +1,108 @@
-# Workflow `wp-publish` — chuẩn bị, duyệt và đẩy bài lên WordPress
+# Workflow `wp-publish` — prepare, approve and verify WordPress changes
 
-## 1. Vai trò và ranh giới
+## 1. Boundary
 
-Đây là **cửa vào duy nhất cho vận hành đăng/cập nhật bài viết từ Google Sheet**. Sheet quyết định ý định
-`NEW` hay `AUDIT`; WordPress chỉ được dùng để đối chiếu trạng thái thật và fail closed khi hai phía mâu
-thuẫn.
+This is the single entrypoint for NEW and AUDIT publishing jobs. The v2 job contract owns route,
+source and optional tracker configuration; WordPress only verifies current state.
 
-Workflow gọi các component, không viết lại logic của chúng:
+Components remain shared across projects:
 
-- `skills/wp-publish-new/` — tạo bài mới ở trạng thái `draft`.
-- `skills/wp-rest-publish/` — cập nhật bài đã tồn tại, có backup + gate.
-- `skills/image-onpage/` — gate ảnh bắt buộc cho cả hai route.
-- `skills/strong-to-b/` — biến đổi HTML xác định, bắt buộc cho cả hai route.
-- `skills/internal-link-insertion/` — integration ngoài repository, chỉ chạy khi đã cài và plan đã duyệt.
+- `skills/wp-publish-new/` — creates or resumes one draft.
+- `skills/wp-rest-publish/` — updates one existing item with backup and readback.
+- `skills/image-onpage/` — prepares and validates existing images.
+- `skills/strong-to-b/` — deterministic HTML normalization.
+- `workflows/wp-publish/scripts/wp_intake.py` — immutable input snapshot.
+- `workflows/wp-publish/scripts/wp_site_scan.py` — read-only site discovery.
+- `workflows/wp-publish/scripts/wp_setup_credentials.py` — optional masked credential setup.
+- `workflows/wp-publish/scripts/wp_learn.py` — records compact STOP/verify evidence for review.
+- `workflows/wp-publish/scripts/wp_batch_approval.py` — one approval for an exact gated batch.
 
-**NEVER**:
+Never change route from WordPress state, write without approval for the current hash, publish a NEW
+item automatically, retry an uncertain POST blindly, request Administrator just to unblock setup, or
+overwrite a project context/profile during discovery.
 
-1. Không tự đổi route vì slug; route đến từ `Loại bài` trên Sheet.
-2. Không coi WordPress/Sheet trả lỗi hoặc HTML WAF là “không tìm thấy”.
-3. Không push khi chưa có xác nhận rõ ràng của operator cho đúng approval hash.
-4. Không tự publish bài mới; đích mặc định luôn là `draft`.
-5. Không retry mù thao tác POST; phải reconcile trạng thái thật trước.
-6. Không tự sửa skill/context từ learning candidate.
-7. Không đổi URL/filename ảnh live trong route audit nếu chưa được duyệt.
-8. Không bỏ hoặc tự sinh H1; source content phải có đúng một H1. Body giữ đúng `body_h1_count` trong publish-context (0 nếu theme đã in tiêu đề bài thành H1, 1 nếu body chịu trách nhiệm H1).
+## 2. Sources of truth
 
-## 2. Nguồn sự thật
-
-| Dữ liệu | Nguồn sự thật |
+| Data | Source |
 |---|---|
-| Ý định NEW/AUDIT, input, lịch | Google Sheet |
-| Trạng thái post/media hiện tại | WordPress REST `context=edit` |
+| NEW/AUDIT, source, content type, tracker | v2 job contract |
+| Current post/media/schema | WordPress REST `context=edit` / `OPTIONS` |
 | Brand, voice, language, market | `projects/<client>/context.md` |
-| Quy tắc publish riêng site | `projects/<client>/knowledge/publish-context.md` |
-| Nội dung được duyệt | bundle trong `content/07-publish-ready/<slug>/` |
-| Bản WP trước audit | `content/_audit-snapshots/` |
-| Lỗi hiện hành | Sheet + `run-state.json` |
-| Learning đã duyệt | `learnings.md` hoặc `publish-context.md` |
+| Site-specific publishing rules | `projects/<client>/publish-context.json` |
+| Approved content | content-addressed bundle under the project content folder |
+| Run state | `run-state.json` |
+| Optional tracking state | configured tracker adapter |
 
-Đọc [bundle-contract.md](references/bundle-contract.md), [sheet-schema.md](references/sheet-schema.md)
-và [state-machine.md](references/state-machine.md) trước mỗi ca chạy. Project mới phải được scaffold theo
-[project-folders.md](references/project-folders.md) bằng `scripts/wp_scaffold_project.py`.
-Credential nằm trong `CLAUDE.local.md` (gitignored), format theo `templates/CLAUDE.local.example.md`:
-user riêng role Editor, mỗi site một khối `### <site> WordPress (REST API)`. Operator tự dán; script
-`scripts/wp_setup_credentials.py` là tuỳ chọn có kiểm tra role. Không nhận password qua chat, không
-đưa password vào command line.
+Before a run, read [job-contract.md](references/job-contract.md),
+[intake-contract.md](references/intake-contract.md), [bundle-contract.md](references/bundle-contract.md),
+[state-machine.md](references/state-machine.md) and the two project context files.
 
-## 3. Pipeline bắt buộc
+## 3. First connection and first content type
 
-### P0 — Chọn dòng và khóa context (read-only)
+1. Scaffold the project with `scripts/wp_scaffold_project.py`.
+2. Store all site credential blocks in the root gitignored `CLAUDE.local.md`.
+3. Run `scripts/wp_site_scan.py`; it may use only GET and OPTIONS.
+4. Present the proposed blog/service-page/product profile and exact missing capabilities.
+5. Confirm endpoint, fields, H1 ownership, HTML policy, SEO meta and image policy with the user.
+6. Set only the confirmed content type to `ready=true`.
 
-1. Đọc đúng một dòng Sheet theo `Row ID`.
-2. Validate input bằng `scripts/wp_sheet_contract.py`.
-3. Xác định client/site từ publish context gắn với tab, không lặp lại trên từng dòng.
-4. Đọc `projects/<client>/context.md` và `projects/<client>/knowledge/publish-context.md`.
-5. Thiếu field/site rule bắt buộc → `BRAND-MISSING` hoặc `INPUT-MISSING`, ghi Sheet rồi dừng.
+Do not invent site rules. The scan proposal is evidence, not active configuration.
 
-Khởi tạo và cập nhật journal bằng `scripts/wp_state.py`; mọi transition được ghi atomically vào
-`run-state.json` để resume đúng `run_id`.
+## 4. Per-job pipeline
 
-### P1 — Đối chiếu route (read-only)
+### P0 — Normalize and lock input
 
-Fetch WordPress bằng post ID/slug và tạo `wp-state.json`, sau đó chạy:
+- Validate with `scripts/wp_job_contract.py`.
+- If the source is a Sheet row, first use `scripts/wp_sheet_contract.py`; it emits the same job.
+- Lock Markdown, HTML or a Google Doc export with `scripts/wp_intake.py`.
+- Load the matching confirmed content profile. Missing context or capability stops the run.
+- Initialize the atomic journal with `scripts/wp_state.py`.
 
-```bash
-python3 workflows/wp-publish/scripts/wp_route.py \
-  --row row.json --wp-state wp-state.json --out route.json
-```
+### P1 — Route reconciliation (read-only)
 
-- `NEW` + chưa có post → `NEW_PREPARE`.
-- `NEW` + draft do cùng run tạo → `NEW_RESUME`.
-- `AUDIT` + tìm thấy đúng post → `AUDIT_PREPARE`.
-- Mọi mâu thuẫn → `ROUTE-CONFLICT`, dừng; không tự đổi loại.
+Fetch the exact WordPress target and run `scripts/wp_route.py`. NEW may create/resume only its own
+draft; AUDIT must resolve exactly one existing target. Any mismatch is `ROUTE-CONFLICT`.
 
-### P2 — Chuẩn bị bundle (chưa ghi WordPress)
+### P2 — Prepare bundle without external writes
 
-- Google Doc: connector kéo chữ + ảnh; lưu **một** snapshot hiện hành và `source-lock.json`.
-- Markdown local: không copy nguồn; `source-lock.json` giữ path + SHA-256.
-- Source Google Doc/Markdown/HTML phải có đúng một H1; thiếu hoặc trùng H1 thì dừng.
-- Ảnh gốc về `content/06-assets/`; không copy vào bundle.
-- Route `NEW` gọi `wp-publish-new`.
-- Route `AUDIT` fetch `content.raw` + immutable backup rồi gọi `wp-rest-publish` để dựng bản mới.
+- NEW calls `wp-publish-new`; AUDIT records a fresh raw snapshot and immutable backup.
+- Run `image-onpage` for every referenced image. Alt text is required except for explicitly
+decorative images. Caption is optional and must not be invented merely to fill a field.
+- Run `scripts/wp_strong.py`; the shared engine converts eligible `<strong>` to `<b>` while
+preserving protected heading/link cases.
+- Apply the confirmed `html_policy`: article cleanup may remove safe editor residue; builder markup is
+preserved unless the profile explicitly allows a transform.
+- Gate final H1 ownership, content, assets, unresolved tokens and transform report.
 
-### P3 — Shared mandatory normalization
+### P3 — Approval
 
-Áp dụng cho **cả NEW và AUDIT**:
+Approval binds `publish-request.json`, prepared HTML, image manifest and transform report. Any change
+invalidates approval and returns the run to preparation.
 
-1. `image-onpage` sinh/kiểm `image-manifest.json`.
-   - NEW: full prepare ảnh mới.
-   - AUDIT: audit toàn bộ; giữ URL live mặc định, full prepare chỉ với ảnh mới/thay đã duyệt.
-2. Chạy `scripts/wp_strong.py` để gọi engine `strong-to-b` trên HTML đã dựng và sinh
-   `transform-report.json`.
-3. Nếu có internal-link plan đã duyệt: chạy `internal-link-insertion`; nếu không, bỏ qua không cảnh báo.
-4. Chạy gate bundle; in diff + bảng ảnh + báo cáo strong.
+For multiple jobs, read [batch-approval.md](references/batch-approval.md). Gate all bundles, present
+one complete manifest/hash, and request one confirmation for the batch. Each job still receives its
+own approval/state and WordPress readback; never approve future or changed jobs implicitly.
 
-### P4 — Operator approval gate
+### P4 — WordPress write and readback
 
-Approval gắn với hash của `publish-request.json`, `content.prepared.html`, `image-manifest.json` và
-`transform-report.json`. Chỉ sau khi operator xác nhận rõ cho đúng hash, chạy lệnh approve để tạo
-`approval.json`.
+- NEW writes draft only to the profile endpoint.
+- AUDIT compares the fresh revision before writing.
+- Replace asset tokens only with verified WordPress media URLs.
+- GET the item with `context=edit` and compare ID, status, title, content and required meta.
 
-Nếu file đổi sau approval → approval invalid, quay lại P3/P4.
+### P5 — Optional tracker readback
 
-### P5 — Ghi WordPress
+- `tracker.type=none`: complete after WordPress readback.
+- `tracker.type=google_sheet`: update by immutable Row ID with `scripts/wp_sheet_io.py`, read the row
+  back, then transition through `TRACKER_VERIFIED`.
 
-- `NEW`: upload/reuse media, thay asset token, gate final, tạo hoặc resume đúng WordPress draft.
-- `AUDIT`: fresh fetch + so `modified`; lệch snapshot → dừng. Push qua `wp-rest-publish`.
-- Google Doc: connector đọc lại revision/`modifiedTime`; khác `source-lock.json` → `SOURCE-STALE`.
-- POST timeout → query trạng thái thật trước khi quyết định retry.
+## 5. Completion gate
 
-### P6 — Verify và Sheet readback
+A run is complete only when its bundle and approval are current, final HTML/image gates pass,
+WordPress readback matches, NEW remains draft, AUDIT has a backup, and any configured tracker is read
+back successfully. A local dry-run is not external completion.
 
-1. GET post `context=edit`; so `content.raw`, status, title, image count và post ID.
-2. NEW phải còn `draft`; AUDIT phải đúng status live trước đó.
-3. Ghi Sheet theo `Row ID` (upsert, không append mù).
-4. Đọc lại đúng dòng, đối chiếu các field vừa ghi.
-5. Chỉ khi cả WP + Sheet readback xanh mới chuyển `VERIFIED`.
-
-Dùng `scripts/wp_sheet_io.py prepare` để tạo patch chỉ chứa tracking field được phép; sau khi connector
-ghi và đọc lại đúng dòng, dùng `scripts/wp_sheet_io.py verify` để chặn `SHEET-READBACK`.
-
-### P7 — Learning compact
-
-Chỉ ghi event khi STOP hoặc `VERIFY-DIFF`. Chạy:
-
-```bash
-python3 workflows/wp-publish/scripts/wp_learn.py record --index workflows/wp-publish/learning-index.json --event event.json
-python3 workflows/wp-publish/scripts/wp_learn.py candidates --index workflows/wp-publish/learning-index.json
-```
-
-Learning candidate không có quyền sửa file. Đọc [learning-policy.md](references/learning-policy.md).
-
-## 4. Gate hoàn thành
-
-Một ca chỉ hoàn thành khi:
-
-- Bundle đúng contract, approval còn hiệu lực.
-- Không còn local path, asset token hoặc marker Markdown trong HTML final.
-- HTML final có đúng `body_h1_count` H1 theo publish-context.
-- Image gate và strong report xanh.
-- NEW là draft; AUDIT có backup + revision/readback.
-- Không tạo trùng post/media/Sheet row khi rerun.
-- Sheet readback khớp.
-
-## 5. Lệnh self-test
+## 6. Self-test
 
 ```bash
 python3 workflows/wp-publish/scripts/wp_selftest.py

@@ -1,7 +1,6 @@
 # Setup
 
-This is the manual setup path for maintainers. New users should give the repository URL to Codex and
-follow [`huong-dan-nguoi-moi.md`](huong-dan-nguoi-moi.md).
+This is the maintainer path. Setup is read-only until an approved pilot is run.
 
 ## 1. Install dependencies
 
@@ -11,12 +10,22 @@ source .venv/bin/activate
 python3 -m pip install -r requirements-dev.txt
 ```
 
-## 2. Configure WordPress credentials
+## 2. Create the project context
 
-Use a dedicated WordPress Editor account. Editor can upload media and update published posts created
-by other users; Administrator is broader than this workflow needs.
+```bash
+mkdir -p projects/example-client
+cp templates/context.example.md projects/example-client/context.md
+python3 workflows/wp-publish/scripts/wp_scaffold_project.py --client example-client
+```
 
-Preferred interactive setup:
+The scaffold creates `publish-context.json`, `scans/` and separate content folders for `blog`,
+`service-page` and `product`. It is idempotent and never overwrites existing context. Shared skills
+and tools remain at repository level.
+
+## 3. Configure WordPress credentials
+
+Use a dedicated account. The exact required capabilities are checked later per content type; do not
+grant Administrator merely to make setup pass.
 
 ```bash
 python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
@@ -24,78 +33,60 @@ python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
   --input-mode dialog
 ```
 
-The script opens a native masked password dialog, verifies the account and required capabilities,
-refuses Administrator, then stores the credential in ignored
-`CLAUDE.local.md` with file mode `0600`. This validated setup is optional: pasting the block from
-`templates/CLAUDE.local.example.md` into `CLAUDE.local.md` works identically for the scripts.
+The native masked dialog verifies the account and stores one site block in the root, ignored
+`CLAUDE.local.md` with mode `0600`. Multiple sites share that one local credential file. Never put a
+password in chat, a project context, a job, a Sheet or a command argument.
 
-`--input-mode auto` is the default and uses a native dialog when available (macOS AppleScript,
-Linux zenity). Windows has no native dialog: run with `--input-mode terminal` and paste the
-Application Password at the hidden prompt. Use `--input-mode terminal` on macOS/Linux only as a
-fallback on systems without a supported desktop dialog.
-
-Environment variables remain available for a temporary advanced session:
+## 4. Run read-only discovery
 
 ```bash
-export WP_URL="https://example.com"
-export WP_USER="wordpress-user"
-export WP_APP_PASS="application-password"
+python3 workflows/wp-publish/scripts/wp_site_scan.py \
+  --client example-client --site-key example-site
 ```
 
-The generated local-file format is:
+The scanner uses only `GET` and `OPTIONS`. It inventories the authenticated identity, capabilities,
+REST post types, taxonomies and endpoint schemas. It writes `site-scan.json` and
+`publish-context.proposed.json` under a timestamped `projects/example-client/scans/` folder; it does
+not overwrite the active profile.
 
-```markdown
-### Example WordPress (REST API)
-- URL: https://example.com
-- User: wordpress-user
-- App Password: application-password
-```
+Review and confirm the profile for the first content type you will use: endpoint/post type, fields,
+taxonomies, H1 ownership, HTML policy, SEO meta, image policy and exact missing capabilities. Copy
+only confirmed values into `projects/example-client/publish-context.json` and set that profile's
+`ready=true`. Other content types remain disabled until separately confirmed.
 
-Never put these values in the Sheet or project context.
+## 5. Prepare a tracker-free job
 
-## 3. Create a project
+Create a v2 job using [the job contract](../workflows/wp-publish/references/job-contract.md). Its
+`source.adapter` can be `local_markdown`, `local_html` or `google_doc`; set
+`tracker.type` to `none`.
 
 ```bash
-mkdir -p projects/example-client
-cp templates/context.example.md projects/example-client/context.md
-python3 workflows/wp-publish/scripts/wp_scaffold_project.py --client example-client
-cp templates/publish-context.example.json projects/example-client/knowledge/publish-context.json
+python3 workflows/wp-publish/scripts/wp_intake.py \
+  --adapter local_html --source article.html --source-ref article.html \
+  --assets-json assets.json --out projects/example-client/content/blog/article/intake
 ```
 
-Complete the brand context and site policy. Keep `ready=false` until all required integrations have
-been tested. A one-time pilot is allowed only when `pilot_allowed=true` and the operator explicitly
-approves the pilot.
+The source may originate anywhere. Intake requires a readable content snapshot and a valid asset
+inventory; downstream gates enforce the confirmed site profile.
 
-Source content must contain exactly one H1. The publish context declares `body_h1_count`: 1 when the
-body keeps that H1, 0 when the theme renders the post title as the page H1. The gate stops when the
-final HTML does not match the declared count.
+## 6. Enable Google Sheets later (optional)
 
-## 4. Configure the Sheet
+Follow [google-sheet-template.md](google-sheet-template.md), then change the project tracker to
+`google_sheet`. The Sheet adapter validates a row and emits the same job contract. A tracker-enabled
+run is complete only after Sheet writeback and readback; a tracker-free run completes after WordPress
+readback.
 
-Use the 11-column contract in [`google-sheet-template.md`](google-sheet-template.md). Bind the Sheet
-ID, tab and timezone in the local project publish context. The workflow must update rows by immutable
-`Row ID`, never by blind append.
-
-## 5. Configure SEO meta REST
-
-Set `seo_meta_adapter` to `yoast` or `rankmath`. There is no separate SEO-plugin REST password; use
-the WordPress Application Password above. If the two plugin meta fields are not registered with
-`show_in_rest`, have the site administrator install the matching file from `snippets/` through
-WPCode, Code Snippets or a mu-plugin. Installing code needs Administrator access; the workflow's
-Editor account cannot install plugins or snippets. Then verify the REST schema and a staging
-round-trip.
-
-## 6. Run checks
+## 7. Run checks
 
 ```bash
 python3 workflows/wp-publish/scripts/wp_selftest.py
 python3 scripts/check_distribution.py
 ```
 
-## 7. Publishing boundary
+## Publishing boundary
 
-- NEW is always created as a WordPress draft.
-- AUDIT must use a fresh WordPress snapshot and backup.
-- The approval hash must match the current bundle immediately before a write.
-- A timeout after POST requires GET/reconciliation; never retry blindly.
-- Completion requires WordPress and Sheet readback.
+- `NEW` remains draft-only.
+- `AUDIT` requires a fresh WordPress snapshot and immutable backup.
+- Every external write requires approval for the current bundle hash.
+- A POST timeout requires GET/reconciliation; never retry blindly.
+- HTML/image transforms and WordPress readback must pass the confirmed content profile.

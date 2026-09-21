@@ -13,7 +13,7 @@ from pathlib import Path
 
 ORDER = [
     "NEW", "CONTEXT_LOCKED", "ROUTED", "PREPARED", "GATED", "APPROVED",
-    "MEDIA_READY", "WP_WRITTEN", "WP_VERIFIED", "SHEET_VERIFIED", "COMPLETE",
+    "MEDIA_READY", "WP_WRITTEN", "WP_VERIFIED", "TRACKER_VERIFIED", "COMPLETE",
 ]
 
 
@@ -36,6 +36,13 @@ def atomic_write(path: Path, data: dict) -> None:
 
 def transition(state: dict, target: str, error_code: str | None = None, details: str | None = None) -> dict:
     current = state["state"]
+    if state.get("resume_state") == "SHEET_VERIFIED":
+        state["resume_state"] = "TRACKER_VERIFIED"
+    if current == "SHEET_VERIFIED":
+        current = "TRACKER_VERIFIED"
+        state["state"] = current
+    if target == "SHEET_VERIFIED":
+        target = "TRACKER_VERIFIED"
     if target == "STOPPED":
         if current != "STOPPED":
             state["resume_state"] = current
@@ -49,7 +56,11 @@ def transition(state: dict, target: str, error_code: str | None = None, details:
         state.pop("error_code", None)
         state.pop("details", None)
     else:
-        if current not in ORDER or target not in ORDER or ORDER.index(target) != ORDER.index(current) + 1:
+        tracker_type = (state.get("tracker") or {}).get("type", "google_sheet" if state.get("row_id") else "none")
+        optional_tracker_completion = current == "WP_VERIFIED" and target == "COMPLETE" and tracker_type == "none"
+        if not optional_tracker_completion and (
+            current not in ORDER or target not in ORDER or ORDER.index(target) != ORDER.index(current) + 1
+        ):
             raise ValueError(f"RESUME-CONFLICT: invalid transition {current} -> {target}")
         state["state"] = target
     state["updated_at"] = _now()
@@ -63,10 +74,12 @@ def main() -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     init = sub.add_parser("init")
     init.add_argument("--file", required=True)
-    init.add_argument("--row-id", required=True)
+    init.add_argument("--job-id")
+    init.add_argument("--row-id")
     init.add_argument("--run-id", required=True)
     init.add_argument("--task-type", required=True, choices=["NEW", "AUDIT"])
     init.add_argument("--client", required=True)
+    init.add_argument("--tracker-type", choices=["none", "google_sheet"])
     move = sub.add_parser("transition")
     move.add_argument("--file", required=True)
     move.add_argument("--to", required=True)
@@ -77,13 +90,23 @@ def main() -> int:
     if args.cmd == "init":
         if path.exists():
             raise SystemExit("RESUME-CONFLICT: state file already exists")
+        job_id = args.job_id or (f"sheet:{args.row_id}" if args.row_id else None)
+        if not job_id:
+            raise SystemExit("INPUT-MISSING: --job-id or --row-id")
+        tracker_type = args.tracker_type or ("google_sheet" if args.row_id else "none")
+        if tracker_type == "google_sheet" and not args.row_id:
+            raise SystemExit("INPUT-MISSING: --row-id for google_sheet tracker")
         now = _now()
         data = {
-            "version": 1, "row_id": args.row_id, "run_id": args.run_id,
+            "version": 2, "job_id": job_id, "run_id": args.run_id,
             "task_type": args.task_type, "client": args.client,
+            "tracker": {"type": tracker_type},
             "state": "NEW", "created_at": now, "updated_at": now,
             "history": [{"state": "NEW", "at": now}],
         }
+        if args.row_id:
+            data["row_id"] = args.row_id
+            data["tracker"]["row_id"] = args.row_id
     else:
         data = json.loads(path.read_text(encoding="utf-8"))
         data = transition(data, args.to, args.error_code, args.details)

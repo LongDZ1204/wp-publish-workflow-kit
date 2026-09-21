@@ -168,14 +168,29 @@ def run(args: argparse.Namespace) -> int:
         raise ValueError("SOURCE-STALE: --approval-hash mismatch")
     if not args.profile:
         raise ValueError("BRAND-MISSING: --profile")
-    profile = read_json(Path(args.profile))
-    if profile.get("ready") is not True and not (args.pilot and profile.get("pilot_allowed") is True):
+    publish_context = read_json(Path(args.profile))
+    content_type = request.get("content_type", "blog")
+    if publish_context.get("version") == 2:
+        profile = (publish_context.get("content_profiles") or {}).get(content_type)
+        if not profile:
+            raise ValueError(f"BRAND-MISSING: content profile {content_type}")
+        pilot_allowed = publish_context.get("pilot_allowed") is True
+        profile = dict(profile)
+        profile["pilot_allowed"] = pilot_allowed
+    else:
+        profile = publish_context
+        pilot_allowed = profile.get("pilot_allowed") is True
+    if profile.get("ready") is not True and not (args.pilot and pilot_allowed):
         raise ValueError("BRAND-MISSING: publish context is not ready")
+    endpoint = str(profile.get("endpoint") or "posts").strip("/")
     state_path = bundle / "run-state.json"
+    request_job_id = request.get("job_id") or (f"sheet:{request['row_id']}" if request.get("row_id") else None)
     state = read_json(state_path) if state_path.exists() else {
-        "version": 1, "run_id": request["run_id"], "row_id": request["row_id"], "media": {}, "post_id": None,
+        "version": 2, "run_id": request["run_id"], "job_id": request_job_id,
+        "row_id": request.get("row_id"), "media": {}, "post_id": None,
     }
-    if state.get("run_id") != request.get("run_id") or state.get("row_id") != request.get("row_id"):
+    state_job_id = state.get("job_id") or (f"sheet:{state['row_id']}" if state.get("row_id") else None)
+    if state.get("run_id") != request.get("run_id") or state_job_id != request_job_id:
         raise ValueError("RESUME-CONFLICT: run-state belongs to another request")
     base_url, user, app_pass = WP_LIB.load_credential(args.site_key)
     media = dict(state.get("media") or {})
@@ -194,26 +209,26 @@ def run(args: argparse.Namespace) -> int:
     (bundle / "content.final.html").write_text(final_html, encoding="utf-8")
     GATE_LIB.validate(bundle, profile, "final", allow_pilot=args.pilot)
     if state.get("post_id"):
-        status, post = WP_LIB.wp_get(base_url, user, app_pass, f"posts/{int(state['post_id'])}?context=edit")
+        status, post = WP_LIB.wp_get(base_url, user, app_pass, f"{endpoint}/{int(state['post_id'])}?context=edit")
         if status >= 300 or post.get("status") != "draft":
             raise ValueError("RESUME-CONFLICT: stored draft cannot be verified")
     else:
         query = urllib.parse.urlencode({"slug": request["slug"], "context": "edit", "status": "any"})
-        status, existing = WP_LIB.wp_get(base_url, user, app_pass, f"posts?{query}")
+        status, existing = WP_LIB.wp_get(base_url, user, app_pass, f"{endpoint}?{query}")
         if status >= 300:
             raise RuntimeError(f"WP slug lookup HTTP {status}")
         if existing:
             raise ValueError("ROUTE-CONFLICT: slug already exists in WordPress")
         payload = build_payload(request, final_html, media, profile)
         try:
-            status, post = WP_LIB.wp_post(base_url, user, app_pass, "posts", payload)
+            status, post = WP_LIB.wp_post(base_url, user, app_pass, endpoint, payload)
         except (TimeoutError, socket.timeout, urllib.error.URLError) as exc:
             raise RuntimeError("WP-TIMEOUT: draft POST uncertain; reconcile before retry") from exc
         if status >= 300:
             raise RuntimeError(f"WP create draft HTTP {status}")
         state["post_id"] = int(post["id"])
         atomic_json(state_path, state)
-    status, readback = WP_LIB.wp_get(base_url, user, app_pass, f"posts/{int(state['post_id'])}?context=edit")
+    status, readback = WP_LIB.wp_get(base_url, user, app_pass, f"{endpoint}/{int(state['post_id'])}?context=edit")
     raw = (readback.get("content") or {}).get("raw")
     expected_meta = build_payload(request, final_html, media, profile).get("meta", {})
     readback_meta = readback.get("meta") or {}

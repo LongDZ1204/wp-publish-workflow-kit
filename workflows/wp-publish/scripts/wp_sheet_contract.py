@@ -74,7 +74,12 @@ def normalize(row: dict) -> dict:
 
     source_ref = str(out.get("source_ref", ""))
     if not out.get("source_type") and source_ref:
-        out["source_type"] = "google_doc" if "docs.google.com" in source_ref else "local_markdown"
+        if "docs.google.com/document" in source_ref:
+            out["source_type"] = "google_doc"
+        elif source_ref.lower().endswith((".html", ".htm")):
+            out["source_type"] = "local_html"
+        else:
+            out["source_type"] = "local_markdown"
     return out
 
 
@@ -85,6 +90,8 @@ def validate(row: dict) -> dict:
         raise ContractError("INPUT-MISSING: " + ", ".join(missing))
     if row["task_type"] not in {"NEW", "AUDIT"}:
         raise ContractError("INPUT-MISSING: task_type must be NEW or AUDIT")
+    if row.get("source_type") not in {"google_doc", "local_markdown", "local_html"}:
+        raise ContractError("INPUT-MISSING: unsupported source_type")
     if row["task_type"] == "NEW" and not _nonempty(row.get("slug")):
         raise ContractError("INPUT-MISSING: slug is required for NEW")
     if row["task_type"] == "AUDIT":
@@ -92,6 +99,16 @@ def validate(row: dict) -> dict:
             raise ContractError("INPUT-MISSING: target_url or post_id is required for AUDIT")
         if row.get("update_mode") and row["update_mode"] not in {"MINIMAL_DIFF", "REBUILD"}:
             raise ContractError("INPUT-MISSING: invalid legacy update_mode")
+    row["version"] = 2
+    row["job_id"] = row.get("job_id") or f"sheet:{row['row_id']}"
+    row["source"] = {
+        "adapter": row["source_type"],
+        "ref": row["source_ref"],
+    }
+    if row.get("source_revision"):
+        row["source"]["revision"] = row["source_revision"]
+    row["tracker"] = {"type": "google_sheet", "row_id": row["row_id"]}
+    row.setdefault("content_type", "blog")
     return row
 
 

@@ -1,4 +1,7 @@
-# Google Sheet template
+# Optional Google Sheet tracker template
+
+Google Sheets is not required for publishing. Use this template only after setting the project
+tracker to `google_sheet`; each row is normalized into the same v2 job contract used without Sheets.
 
 Use one client-specific tab with these columns:
 

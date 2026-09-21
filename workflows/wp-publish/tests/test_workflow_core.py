@@ -24,6 +24,10 @@ learn = load("wp_learn")
 sheet_io = load("wp_sheet_io")
 scaffold_mod = load("wp_scaffold_project")
 credential_setup = load("wp_setup_credentials")
+job_contract = load("wp_job_contract")
+intake_mod = load("wp_intake")
+site_scan = load("wp_site_scan")
+batch_approval = load("wp_batch_approval")
 
 
 class SheetContractTests(unittest.TestCase):
@@ -42,6 +46,8 @@ class SheetContractTests(unittest.TestCase):
         })
         self.assertEqual(row["target_url"], "https://example.com/a/")
         self.assertEqual(row["source_type"], "google_doc")
+        self.assertEqual(row["job_id"], "sheet:r2")
+        self.assertEqual(row["tracker"]["type"], "google_sheet")
 
     def test_new_combined_locator_becomes_slug(self):
         row = sheet.validate({
@@ -49,6 +55,128 @@ class SheetContractTests(unittest.TestCase):
             "Slug / URL WP": "new-post", "Bài / Title": "New post",
         })
         self.assertEqual(row["slug"], "new-post")
+
+    def test_html_source_is_detected(self):
+        row = sheet.validate({
+            "Row ID": "r4", "Loại bài": "NEW", "Nguồn content": "article.html",
+            "Slug / URL WP": "article", "Bài / Title": "Article",
+        })
+        self.assertEqual(row["source_type"], "local_html")
+
+
+class JobContractTests(unittest.TestCase):
+    def test_tracker_free_html_job(self):
+        job = job_contract.validate({
+            "job_id": "job-1", "run_id": "run-1", "client": "demo", "site_key": "demo",
+            "task_type": "NEW", "content_type": "service-page", "title": "Demo", "slug": "demo",
+            "source": {"adapter": "local_html", "ref": "demo.html"},
+        })
+        self.assertEqual(job["tracker"], {"type": "none"})
+        self.assertEqual(job["source"]["adapter"], "local_html")
+
+    def test_legacy_sheet_job_is_normalized(self):
+        job = job_contract.validate({
+            "row_id": "R1", "run_id": "run-1", "client": "demo", "site_key": "demo",
+            "task_type": "NEW", "title": "Demo", "slug": "demo",
+            "source_ref": "demo.md", "source_type": "local_markdown",
+        })
+        self.assertEqual(job["job_id"], "sheet:R1")
+        self.assertEqual(job["tracker"]["type"], "google_sheet")
+
+
+class IntakeTests(unittest.TestCase):
+    def test_html_snapshot_and_assets_are_locked(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            source = root / "source.html"
+            source.write_text("<p>Hello</p>", encoding="utf-8")
+            assets = root / "assets-source.json"
+            assets.write_text('{"version":1,"images":[{"asset_id":"hero"}]}', encoding="utf-8")
+            intake = intake_mod.create_intake(
+                "local_html", source, str(source), root / "intake", assets
+            )
+            self.assertEqual(intake["media_type"], "text/html")
+            self.assertEqual(intake["asset_count"], 1)
+            self.assertTrue((root / "intake/content.snapshot.html").is_file())
+
+    def test_invalid_assets_do_not_copy_snapshot(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            source = root / "source.md"
+            source.write_text("# Hello", encoding="utf-8")
+            assets = root / "assets-source.json"
+            assets.write_text('{"images":"wrong"}', encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "assets.images"):
+                intake_mod.create_intake(
+                    "local_markdown", source, str(source), root / "intake", assets
+                )
+            self.assertFalse((root / "intake/content.snapshot.md").exists())
+
+
+class SiteScanTests(unittest.TestCase):
+    def test_scan_is_read_only_and_builds_profiles(self):
+        calls = []
+
+        def requester(method, url, user, app_pass):
+            calls.append((method, url))
+            if "users/me" in url:
+                return 200, {"id": 7, "roles": ["editor"], "capabilities": {
+                    "edit_posts": True, "edit_pages": True, "upload_files": True,
+                }}
+            if "types?" in url:
+                return 200, {
+                    "post": {"rest_base": "posts"}, "page": {"rest_base": "pages"},
+                    "product": {"rest_base": "products"},
+                }
+            if "taxonomies?" in url:
+                return 200, {"category": {}, "post_tag": {}}
+            return 200, {"schema": {"properties": {"title": {}}}}
+
+        result = site_scan.build_scan("https://example.com", "editor", "secret", requester)
+        self.assertTrue(result["read_only"])
+        self.assertTrue(all(method in {"GET", "OPTIONS"} for method, _ in calls))
+        self.assertEqual(result["profiles"]["product"]["post_type"], "product")
+        self.assertEqual(result["profiles"]["product"]["endpoint"], "products")
+        self.assertIn("edit_products", result["profiles"]["product"]["missing_capabilities"])
+
+
+class BatchApprovalTests(unittest.TestCase):
+    def make_bundle(self, root: Path, job_id: str) -> Path:
+        bundle = root / job_id
+        bundle.mkdir()
+        source = root / f"{job_id}.md"
+        source.write_text("# Source", encoding="utf-8")
+        request = {
+            "job_id": job_id, "run_id": f"run-{job_id}", "task_type": "NEW",
+            "content_type": "blog", "title": job_id,
+        }
+        (bundle / "publish-request.json").write_text(json.dumps(request), encoding="utf-8")
+        (bundle / "content.prepared.html").write_text("<h1>Source</h1>", encoding="utf-8")
+        (bundle / "image-manifest.json").write_text('{"images":[]}', encoding="utf-8")
+        (bundle / "transform-report.json").write_text('{"ok":true}', encoding="utf-8")
+        lock = {
+            "source_type": "local_markdown", "source_path": str(source),
+            "source_sha256": batch_approval.BUNDLE.sha256_file(source),
+        }
+        (bundle / "source-lock.json").write_text(json.dumps(lock), encoding="utf-8")
+        return bundle
+
+    def test_one_batch_approval_creates_exact_per_job_approvals(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            first = self.make_bundle(root, "job-a")
+            second = self.make_bundle(root, "job-b")
+            manifest = batch_approval.build_manifest("batch-1", [second, first])
+            manifest_path = root / "batch-manifest.json"
+            batch_approval.BUNDLE.atomic_json(manifest_path, manifest)
+            digest = batch_approval.file_sha256(manifest_path)
+            approval = batch_approval.approve_manifest(manifest_path, digest, "operator")
+            self.assertEqual(approval["job_count"], 2)
+            self.assertTrue((first / "approval.json").is_file())
+            self.assertTrue((second / "approval.json").is_file())
+            (second / "content.prepared.html").write_text("changed", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "SOURCE-STALE"):
+                batch_approval.verify_manifest(manifest)
 
 
 class RouteTests(unittest.TestCase):
@@ -87,6 +215,16 @@ class StateTests(unittest.TestCase):
     def test_skipping_state_fails(self):
         with self.assertRaises(ValueError):
             state_mod.transition({"state": "NEW", "history": []}, "PREPARED")
+
+    def test_tracker_free_run_can_complete_after_wp_readback(self):
+        data = {"state": "WP_VERIFIED", "tracker": {"type": "none"}, "history": []}
+        state_mod.transition(data, "COMPLETE")
+        self.assertEqual(data["state"], "COMPLETE")
+
+    def test_sheet_alias_migrates_to_tracker_verified(self):
+        data = {"state": "WP_VERIFIED", "tracker": {"type": "google_sheet"}, "history": []}
+        state_mod.transition(data, "SHEET_VERIFIED")
+        self.assertEqual(data["state"], "TRACKER_VERIFIED")
 
 
 class LearningTests(unittest.TestCase):
@@ -140,11 +278,11 @@ class ProjectScaffoldTests(unittest.TestCase):
             (project / "context.md").write_text("# approved context\n", encoding="utf-8")
             first = scaffold_mod.scaffold("demo-client", projects)
             self.assertTrue(first["created"])
-            profile = project / "knowledge/publish-context.json"
+            profile = project / "publish-context.json"
             generated = json.loads(profile.read_text(encoding="utf-8"))
-            self.assertFalse(generated["ready"])
+            self.assertFalse(generated["content_profiles"]["blog"]["ready"])
             self.assertFalse(generated["pilot_allowed"])
-            self.assertIsNone(generated["spreadsheet_id"])
+            self.assertEqual(generated["tracker"], {"type": "none"})
             self.assertEqual(generated["timezone"], "UTC")
             profile.write_text('{"ready": true}\n', encoding="utf-8")
             second = scaffold_mod.scaffold("demo-client", projects)

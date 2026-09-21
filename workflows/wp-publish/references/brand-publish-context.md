@@ -1,19 +1,14 @@
-# Brand và publish context
+# Brand and publish context
 
-Workflow load hai lớp:
+The workflow loads two project-local layers:
 
-1. `projects/<client>/context.md`: brand, voice, language, market, spelling, keyword/entity.
-2. `projects/<client>/knowledge/publish-context.md`: technical publishing policy.
+1. `projects/<client>/context.md`: brand, voice, language, market and editorial facts.
+2. `projects/<client>/publish-context.json`: technical publishing profiles.
 
-`publish-context.md` tối thiểu cần:
+The v2 publish context stores `site_key`, optional tracker, timezone and a `content_profiles` object.
+Each `blog`, `service-page` or `product` profile has its own endpoint, post type, ready gate, H1
+ownership, HTML policy, required fields/capabilities, image policy, SEO adapter and schema hash.
 
-- `site_key` và `rest_base`.
-- Source content luôn có đúng một H1. `body_h1_count` ghi rõ body giữ mấy H1: 0 nếu theme render tiêu đề bài thành H1 của trang, 1 nếu body chịu trách nhiệm H1.
-- image `format_policy`, `max_kb`, `max_width`, existing-media policy.
-- default category/tag/author nếu được operator chốt; không có thì Sheet phải cung cấp.
-- `spreadsheet_id`, Sheet tab/range và timezone.
-- `ready=false` cho đến khi REST, Sheet và media round-trip đã được verify.
-- `pilot_allowed=true` chỉ cho một pilot NEW draft-only có phê duyệt rõ ràng.
-- `seo_meta_adapter` là `yoast` hoặc `rankmath`; REST capability đã được test.
-
-Không copy full brand context vào Sheet. Không tự điền TODO bằng suy đoán.
+`clean_article` permits only explicitly defined safe article cleanup. `preserve_builder` protects
+theme/page-builder wrappers and inline behavior. No profile becomes ready from detection alone; the
+user confirms it once for that content type. Do not copy credentials or full brand context here.

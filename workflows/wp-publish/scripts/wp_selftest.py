@@ -13,7 +13,9 @@ WF = ROOT / "workflows" / "wp-publish"
 def main() -> int:
     required = [
         WF / "CLAUDE.md", WF / "AGENTS.md", WF / "learning-index.json", WF / "learnings.md",
-        WF / "references" / "bundle-contract.md", WF / "references" / "sheet-schema.md",
+        WF / "references" / "job-contract.md", WF / "references" / "intake-contract.md",
+        WF / "references" / "site-discovery.md", WF / "references" / "bundle-contract.md",
+        WF / "references" / "batch-approval.md", WF / "references" / "sheet-schema.md",
         WF / "references" / "state-machine.md", WF / "references" / "error-codes.md",
         WF / "references" / "brand-publish-context.md", WF / "references" / "learning-policy.md",
         WF / "references" / "project-folders.md",

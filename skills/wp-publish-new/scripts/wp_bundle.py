@@ -60,10 +60,10 @@ def verify_source(bundle: Path) -> None:
     if not lock_path.is_file():
         raise ValueError("INPUT-MISSING: source-lock.json")
     lock_data = json.loads(lock_path.read_text(encoding="utf-8"))
-    if lock_data.get("source_type") == "local_markdown":
+    if lock_data.get("source_type") in {"local_markdown", "local_html"}:
         source = Path(lock_data.get("source_path", ""))
         if not source.is_file() or sha256_file(source) != lock_data.get("source_sha256"):
-            raise ValueError("SOURCE-STALE: local Markdown changed after lock")
+            raise ValueError("SOURCE-STALE: local source changed after lock")
     elif lock_data.get("source_type") == "google_doc":
         snapshot = bundle / str(lock_data.get("snapshot", "source.snapshot.md"))
         if not snapshot.is_file() or sha256_file(snapshot) != lock_data.get("snapshot_sha256"):
@@ -80,8 +80,10 @@ def lock(args: argparse.Namespace) -> int:
     if not request_path.is_file() or not source.is_file():
         raise ValueError("INPUT-MISSING: request/source")
     request = json.loads(request_path.read_text(encoding="utf-8"))
-    required = {"row_id", "run_id", "client", "site_key", "task_type", "title", "slug"}
+    required = {"run_id", "client", "site_key", "task_type", "title", "slug"}
     missing = sorted(key for key in required if not request.get(key))
+    if not (request.get("job_id") or request.get("row_id")):
+        missing.append("job_id")
     if missing or str(request.get("task_type", "")).upper() != "NEW":
         raise ValueError(f"INPUT-MISSING: NEW request {missing or ['task_type=NEW']}")
     bundle.mkdir(parents=True, exist_ok=True)
@@ -150,7 +152,7 @@ def main() -> int:
     p_lock = sub.add_parser("lock")
     p_lock.add_argument("--request", required=True)
     p_lock.add_argument("--source", required=True)
-    p_lock.add_argument("--source-type", choices=("google_doc", "local_markdown"), required=True)
+    p_lock.add_argument("--source-type", choices=("google_doc", "local_markdown", "local_html"), required=True)
     p_lock.add_argument("--source-ref", required=True)
     p_lock.add_argument("--source-revision")
     p_lock.add_argument("--bundle", required=True)

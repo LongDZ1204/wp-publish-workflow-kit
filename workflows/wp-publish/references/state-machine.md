@@ -1,36 +1,18 @@
-# State machine và resume contract
-
-`State machine` là bảng trạng thái cho phép workflow biết bước nào được chuyển sang bước nào; dùng để
-rerun không tạo bài/media/Sheet row trùng.
-
-## States
+# State machine and resume contract
 
 ```text
 NEW → CONTEXT_LOCKED → ROUTED → PREPARED → GATED → APPROVED
-    → MEDIA_READY → WP_WRITTEN → WP_VERIFIED → SHEET_VERIFIED → COMPLETE
+    → MEDIA_READY → WP_WRITTEN → WP_VERIFIED
 
-Mọi state → STOPPED
-STOPPED → state trước lỗi (sau khi input/condition được xử lý)
+tracker=none:          WP_VERIFIED → COMPLETE
+tracker=google_sheet:  WP_VERIFIED → TRACKER_VERIFIED → COMPLETE
+
+Any state → STOPPED
+STOPPED → state before the error after its condition is fixed
 ```
 
-## Route outcomes
+`SHEET_VERIFIED` is accepted as a migration alias for `TRACKER_VERIFIED`. New state files use v2,
+`job_id`, `run_id` and a tracker object. A legacy `row_id` maps to `job_id=sheet:<row_id>`.
 
-| Sheet | WP truth | Outcome |
-|---|---|---|
-| NEW | không có post | `NEW_PREPARE` |
-| NEW | draft + cùng `post_id/run_id` trong state | `NEW_RESUME` |
-| NEW | post khác đã tồn tại | STOP `ROUTE-CONFLICT` |
-| AUDIT | đúng post tồn tại | `AUDIT_PREPARE` |
-| AUDIT | không tìm thấy / nhiều kết quả | STOP `ROUTE-CONFLICT` |
-
-## Retry
-
-- GET: tối đa ba lần, backoff tăng dần; HTML/WAF luôn dừng.
-- POST: không retry mù. Sau timeout phải GET/reconcile theo post ID, slug hoặc media mapping.
-- Mỗi media ID phải persist ngay sau response thành công.
-
-## Resume
-
-- Chỉ resume khi `row_id`, `run_id`, task type, client và source lock khớp.
-- File đã đổi sau approval → quay về `PREPARED`, xóa hiệu lực approval (không xóa evidence file).
-- Draft đã tạo nhưng Sheet lỗi → resume verify/writeback, không chuyển sang AUDIT.
+GET may retry with bounded backoff. POST must never be retried blindly; reconcile by post ID, slug or
+persisted media mapping. Resume only when job/run IDs, task type, client and source lock match.

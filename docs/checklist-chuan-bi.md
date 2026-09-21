@@ -4,14 +4,15 @@
 
 - [ ] Có operator chịu trách nhiệm duyệt bundle/hash.
 - [ ] Có WordPress user riêng cho REST, mặc định role Editor; không dùng Administrator.
-- [ ] Có quyền đọc/ghi đúng Google Sheet tab.
-- [ ] Có quyền đọc Google Doc hoặc file Markdown nguồn.
+- [ ] Nếu dùng tracker: có quyền đọc/ghi đúng Google Sheet tab.
+- [ ] Có quyền đọc Google Doc hoặc file Markdown/HTML nguồn và ảnh đi kèm.
 
 ## Website
 
 - [ ] Domain và `site_key` đúng.
 - [ ] Khối credential đã dán đúng format vào `CLAUDE.local.md` (URL/User/App Password, user role Editor).
-- [ ] File content có đúng một H1; `body_h1_count` đã chốt (0 nếu theme in tiêu đề bài thành H1, 1 nếu body giữ H1).
+- [ ] Đã chạy site scan read-only; không dùng Administrator chỉ để vượt setup.
+- [ ] Content type đầu tiên đã xác nhận endpoint, field, H1 ownership và HTML policy.
 - [ ] `seo_meta_adapter` là `yoast` hoặc `rankmath` và đã test REST.
 - [ ] Category/tag/author mặc định đã chốt hoặc có input.
 - [ ] Media upload, reuse và readback đã test.
@@ -20,8 +21,9 @@
 
 - [ ] `projects/<client>/context.md` có brand fact thật.
 - [ ] `publish-context.md` ghi quyết định vận hành.
-- [ ] `publish-context.json` có Sheet ID/tab/timezone.
-- [ ] `ready=false` trong lúc setup.
+- [ ] `publish-context.json` có profile riêng cho blog/service-page/product.
+- [ ] `tracker.type=none` nếu chưa dùng Sheet.
+- [ ] Chỉ profile đã xác nhận mới có `ready=true`.
 
 ## Pilot
 
@@ -29,6 +31,6 @@
 - [ ] Route `NEW`, slug chưa tồn tại.
 - [ ] Dừng ở `Chờ xác nhận` trước write.
 - [ ] Tạo đúng một WordPress draft.
-- [ ] WP readback và Sheet readback đều đạt.
+- [ ] WP readback và tracker readback (nếu bật) đều đạt.
 - [ ] Rerun không tạo trùng post/media.
 - [ ] Sau pilot mới bật `ready=true`.

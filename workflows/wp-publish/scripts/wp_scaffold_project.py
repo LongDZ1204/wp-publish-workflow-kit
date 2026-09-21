@@ -17,6 +17,21 @@ def write_new(path: Path, text: str) -> bool:
     return True
 
 
+def profile(endpoint: str, post_type: str, html_policy: str, capabilities: list[str]) -> dict:
+    return {
+        "endpoint": endpoint,
+        "post_type": post_type,
+        "ready": False,
+        "body_h1_count": None,
+        "html_policy": html_policy,
+        "required_fields": ["title", "content", "slug"],
+        "required_capabilities": capabilities,
+        "image_policy": {"format_policy": "preserve", "max_kb": 150, "max_width": 1200},
+        "seo_meta_adapter": None,
+        "schema_hash": None,
+    }
+
+
 def scaffold(client: str, projects_root: Path) -> dict:
     if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", client):
         raise ValueError("INPUT-MISSING: client must be a kebab-case slug")
@@ -24,46 +39,49 @@ def scaffold(client: str, projects_root: Path) -> dict:
     if not (project / "context.md").is_file():
         raise ValueError("BRAND-MISSING: create and approve project context.md first")
     directories = [
-        project / "content/06-assets",
-        project / "content/07-publish-ready",
-        project / "content/_audit-snapshots",
-        project / "content/_inbox",
-        project / "knowledge",
+        project / "content/blog",
+        project / "content/service-page",
+        project / "content/product",
+        project / "scans",
     ]
     for directory in directories:
         directory.mkdir(parents=True, exist_ok=True)
     created = []
     files = {
-        project / "content/07-publish-ready/.gitkeep": "\n",
-        project / "content/_audit-snapshots/.gitkeep": "\n",
-        project / "content/_inbox/.gitignore": "*\n!.gitignore\n",
-        project / "knowledge/publish-context.md": (
+        project / "content/blog/.gitkeep": "\n",
+        project / "content/service-page/.gitkeep": "\n",
+        project / "content/product/.gitkeep": "\n",
+        project / "scans/.gitkeep": "\n",
+        project / "publish-context.md": (
             f"# {client} publish context\n\n"
             "Site-specific decisions for workflow `wp-publish`. Keep brand/business facts in "
-            "`../context.md`. Confirm REST, Sheet/tab, body H1 ownership (`body_h1_count`: 0 if the "
-            "theme renders the post title as the page H1, else 1), SEO meta adapter and a media "
-            "round-trip before enabling writes.\n"
+            "`context.md`. After the read-only site scan, confirm fields, body H1 ownership, HTML "
+            "policy, SEO adapter and permissions for each content type before setting it ready.\n"
         ),
-        project / "knowledge/publish-context.json": json.dumps({
-            "version": 1,
+        project / "publish-context.json": json.dumps({
+            "version": 2,
             "site_key": client,
-            "ready": False,
+            "tracker": {"type": "none"},
             "pilot_allowed": False,
-            "body_h1_count": None,
-            "format_policy": "preserve",
-            "max_kb": 150,
-            "max_width": 1200,
-            "seo_meta_adapter": None,
-            "spreadsheet_id": None,
-            "sheet_tab": None,
+            "content_profiles": {
+                "blog": profile("posts", "post", "clean_article", ["edit_posts", "upload_files"]),
+                "service-page": profile("pages", "page", "preserve_builder", ["edit_pages", "upload_files"]),
+                "product": profile("product", "product", "preserve_builder", ["edit_products", "upload_files"]),
+            },
             "timezone": "UTC",
-            "notes": "Confirm integrations before setting ready=true.",
+            "notes": "Run wp_site_scan.py, then confirm one profile at a time before enabling writes.",
         }, ensure_ascii=False, indent=2) + "\n",
     }
     for path, text in files.items():
         if write_new(path, text):
             created.append(str(path.relative_to(projects_root.resolve())))
-    return {"project": str(project), "created": created, "preserved": len(files) - len(created)}
+    legacy = project / "knowledge" / "publish-context.json"
+    return {
+        "project": str(project),
+        "created": created,
+        "preserved": len(files) - len(created),
+        "legacy_publish_context": str(legacy) if legacy.exists() else None,
+    }
 
 
 def main() -> int:

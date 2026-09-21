@@ -1,17 +1,16 @@
 # WP Publish Workflow Kit
 
-A portable, approval-bound workflow for publishing content from Google Sheets/Docs to WordPress.
-
-> Người mới: không cần tự cài bằng lệnh. Dùng prompt AI ở phần **Quick start**, sau đó làm theo
-> **[hướng dẫn từng bước](docs/huong-dan-nguoi-moi.md)**.
+A portable, approval-bound workflow for preparing and publishing content to WordPress. The core job
+does not depend on Google Sheets: Markdown, HTML and exported Google Doc snapshots enter the same
+contract, while Google Sheets can be enabled later as an optional tracking adapter.
 
 It supports two routes:
 
-- `NEW`: prepare images and HTML, bind approval to a content hash, then create exactly one WordPress draft.
-- `AUDIT`: fetch the current WordPress HTML, back it up, apply minimal edits, then update and verify the live post.
+- `NEW`: prepare assets and HTML, bind approval to a content hash, then create exactly one draft.
+- `AUDIT`: snapshot and back up one existing item, apply the approved change, then read it back.
 
-Both routes fail closed, run image checks, normalize `<strong>` deterministically, and require WordPress
-plus Sheet readback before completion.
+The workflow keeps credentials global and gitignored, but separates each project's context, content,
+images, scans and run data. Blog, service-page and product profiles are confirmed independently.
 
 ## Repository layout
 
@@ -19,50 +18,48 @@ plus Sheet readback before completion.
 .codex-plugin/plugin.json       Codex plugin manifest
 skills/wp-publish/              Public workflow entrypoint
 skills/wp-publish-new/          NEW draft executor
-skills/wp-rest-publish/         Existing-post AUDIT executor
-skills/image-onpage/            Image inventory and preparation
-skills/strong-to-b/             HTML normalization instructions
+skills/wp-rest-publish/         Existing-content executor
+skills/image-onpage/            Shared image preparation skill
+skills/strong-to-b/             Shared strong-to-b skill
 tools/strong-to-b/              Deterministic HTML engine
-workflows/wp-publish/           State machine, contracts, scripts and tests
-snippets/                       Yoast/Rank Math REST meta adapters
-templates/                      Safe starter files (incl. CLAUDE.local.example.md)
-docs/                           Setup and Sheet documentation
+workflows/wp-publish/           Contracts, discovery, state machine and tests
+templates/                      Safe starter files
+docs/                           Setup and optional Sheet documentation
 ```
 
 ## Requirements
 
 - Python 3.10+
-- A dedicated WordPress Editor account with an Application Password; do not use Administrator
-- Access to Google Sheets and the selected content source
-- A source document containing exactly one H1; the publish context declares `body_h1_count` (1 = body keeps the H1, 0 = the theme's post title is the page H1)
+- A dedicated WordPress account with the exact capabilities reported by the read-only scan
+- An Application Password stored only in the root `CLAUDE.local.md`
+- Content plus any referenced images; the initial adapters are Markdown, HTML and Google Doc export
 - `Pillow`, `certifi`, and `beautifulsoup4`; `pytest` for development tests
 
 ## Quick start
 
-Open Codex in your working folder and send this prompt. The AI should install dependencies, scaffold
-the project and run read-only checks; it must not write to WordPress during setup.
+Open Codex in your working folder and send:
 
 ```text
 Hãy cài WP Publish Workflow Kit từ:
 https://github.com/LongDZ1204/wp-publish-workflow-kit
 
-Hãy setup project cho [website/domain]. Chỉ cài và chạy preflight read-only.
-Chưa tạo hoặc cập nhật nội dung WordPress. Hỏi tôi từng thông tin còn thiếu, mỗi lần một mục.
-Credential phải dùng user Editor riêng. KHÔNG nhận password qua chat; hướng dẫn tôi tự dán khối
-credential vào CLAUDE.local.md theo templates/CLAUDE.local.example.md (Bước 3 của docs/huong-dan-nguoi-moi.md).
-Mỗi file content có đúng một H1. Site khai báo `body_h1_count`: 0 nếu theme đã in tiêu đề bài thành H1, 1 nếu body giữ H1 đó.
-Kết thúc bằng READY FOR PILOT hoặc danh sách phần còn thiếu.
+Setup project cho [website/domain]. Chỉ scaffold và chạy site scan read-only; chưa ghi WordPress.
+Credential dùng user riêng, lưu trong CLAUDE.local.md và không nhận password qua chat.
+Sau scan, hãy đề xuất rồi hỏi tôi xác nhận profile blog/service-page/product: endpoint, field bắt buộc,
+H1 ownership, HTML policy, SEO meta, ảnh và quyền còn thiếu. Google Sheet để type=none nếu tôi chưa dùng.
+Kết thúc bằng READY FOR PILOT hoặc danh sách chính xác phần còn thiếu.
 ```
 
-The beginner guide shows how to create a WordPress Application Password, prepare the Sheet, enable
-Yoast/Rank Math meta through REST and run a safe NEW draft pilot:
-[`docs/huong-dan-nguoi-moi.md`](docs/huong-dan-nguoi-moi.md).
+Setup creates `projects/<client>/publish-context.json`, then the read-only scan writes a proposed
+profile under `projects/<client>/scans/`. Nothing is enabled until the user confirms the relevant
+content type. See [the beginner guide](docs/huong-dan-nguoi-moi.md) and
+[the maintainer setup](docs/setup.md).
 
-Manual commands for maintainers are in [`docs/setup.md`](docs/setup.md).
+## Optional Google Sheet tracking
 
-For team use, clone this repository into a shared workspace or reference it from a local Codex
-marketplace. The `.codex-plugin/plugin.json` manifest exposes the skills; project data and credentials
-remain outside Git through the supplied ignore rules.
+Publishing works with `tracker.type=none`. To add a Sheet later, follow
+[docs/google-sheet-template.md](docs/google-sheet-template.md); every Sheet row is converted to the
+same v2 job contract and read back by immutable `Row ID`.
 
 ## Test
 
@@ -76,14 +73,9 @@ python3 -m pytest tools/strong-to-b/test_strong_to_b.py -q
 python3 scripts/check_distribution.py
 ```
 
-## Contributing
-
-Create a branch, keep client/runtime data outside Git, run the complete test block above, and open a
-pull request with a short explanation of the workflow behaviour being changed.
-
-This repository is distributed under the MIT License. See [`LICENSE`](LICENSE).
-
 ## Security
 
-Never commit WordPress credentials, Google tokens, project bundles, source snapshots, uploaded media,
-or client-specific Sheet/Doc IDs. See [`SECURITY.md`](SECURITY.md).
+Never commit credentials, Google tokens, project bundles, source snapshots, uploaded media or
+client-specific IDs. See [SECURITY.md](SECURITY.md).
+
+This repository is distributed under the MIT License. See [LICENSE](LICENSE).

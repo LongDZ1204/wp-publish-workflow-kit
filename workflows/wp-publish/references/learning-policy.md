@@ -22,7 +22,7 @@ candidate summary. Smooth run không ghi event mới.
 - Ít nhất ba `run_id` khác nhau.
 - Có root cause, proposed deterministic guard, target file và required regression test.
 - operator duyệt trước khi sửa skill/script/context.
-- Site-specific → `projects/<client>/knowledge/publish-context.md`.
+- Site-specific → `projects/<client>/publish-context.md` after explicit user confirmation.
 - Cross-client technical → workflow/tool/skill tương ứng.
 - Không có check chạy được → không promote thành rule.
 

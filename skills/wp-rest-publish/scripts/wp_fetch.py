@@ -4,7 +4,7 @@
 Usage:
   python3 wp_fetch.py --site example-site --slug bim-level-of-development --out DIR
   python3 wp_fetch.py --site example-site --id 1220 --out DIR
-  [--claude-local /path/to/CLAUDE.local.md]  [--backup /path/to/_audit-snapshots]
+  [--claude-local /path/to/CLAUDE.local.md]  [--backup /path/to/item/backups]
 
 Xuất ra DIR: <slug|id>.raw.html (content.raw) + <slug|id>.meta.json (id, modified, link, title).
 Nếu --backup có, copy thêm 1 bản .raw.html vào đó (timestamp do người gọi tự đặt tên trước).
@@ -25,7 +25,7 @@ def main():
     ap.add_argument("--rest-base", default="posts",
                     help="REST base của post type, vd posts, project, service")
     ap.add_argument("--claude-local")
-    ap.add_argument("--backup", help="thư mục backup thêm (vd projects/<slug>/content/_audit-snapshots)")
+    ap.add_argument("--backup", help="thư mục backup thêm (vd projects/<client>/content/blog/<slug>/backups)")
     a = ap.parse_args()
     if not a.slug and not a.id:
         sys.exit("ERR: cần --slug hoặc --id")
