@@ -275,12 +275,18 @@ class ProjectScaffoldTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             projects = Path(td) / "projects"
             project = projects / "demo-client"
-            project.mkdir(parents=True)
-            (project / "context.md").write_text("# approved context\n", encoding="utf-8")
             first = scaffold_mod.scaffold("demo-client", projects)
             self.assertTrue(first["created"])
+            self.assertEqual(first["context_status"], "created-needs-confirmation")
+            self.assertIn("# Demo Client context", (project / "context.md").read_text(encoding="utf-8"))
+            self.assertTrue((project / "content/README.md").is_file())
+            self.assertTrue((project / "content/blog/.gitkeep").is_file())
+            self.assertTrue((project / "content/service-page/.gitkeep").is_file())
+            self.assertTrue((project / "content/product/.gitkeep").is_file())
+            self.assertTrue((project / "scans/.gitkeep").is_file())
             profile = project / "publish-context.json"
             generated = json.loads(profile.read_text(encoding="utf-8"))
+            self.assertEqual(generated["site_key"], "demo-client")
             self.assertFalse(generated["content_profiles"]["blog"]["ready"])
             self.assertFalse(generated["pilot_allowed"])
             self.assertEqual(generated["tracker"], {"type": "none"})
@@ -289,11 +295,12 @@ class ProjectScaffoldTests(unittest.TestCase):
             second = scaffold_mod.scaffold("demo-client", projects)
             self.assertEqual(profile.read_text(encoding="utf-8"), '{"ready": true}\n')
             self.assertEqual(second["created"], [])
+            self.assertEqual(second["context_status"], "preserved")
 
-    def test_scaffold_requires_existing_context(self):
+    def test_scaffold_rejects_invalid_client_slug(self):
         with tempfile.TemporaryDirectory() as td:
-            with self.assertRaisesRegex(ValueError, "BRAND-MISSING"):
-                scaffold_mod.scaffold("missing-client", Path(td))
+            with self.assertRaisesRegex(ValueError, "kebab-case"):
+                scaffold_mod.scaffold("Missing Client", Path(td))
 
 
 class CredentialSetupTests(unittest.TestCase):

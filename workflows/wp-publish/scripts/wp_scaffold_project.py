@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create non-destructive wp-publish folders and fail-closed site context templates."""
+"""Create a project from the visible, non-destructive project skeleton."""
 
 from __future__ import annotations
 
@@ -7,6 +7,10 @@ import argparse
 import json
 import re
 from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[3]
+TEMPLATE_ROOT = ROOT / "templates" / "project-skeleton"
 
 
 def write_new(path: Path, text: str) -> bool:
@@ -17,69 +21,38 @@ def write_new(path: Path, text: str) -> bool:
     return True
 
 
-def profile(endpoint: str, post_type: str, html_policy: str, capabilities: list[str]) -> dict:
-    return {
-        "endpoint": endpoint,
-        "post_type": post_type,
-        "ready": False,
-        "body_h1_count": None,
-        "html_policy": html_policy,
-        "required_fields": ["title", "content", "slug"],
-        "required_capabilities": capabilities,
-        "image_policy": {"format_policy": "preserve", "max_kb": 150, "max_width": 1200},
-        "seo_meta_adapter": None,
-        "schema_hash": None,
-    }
+def render(text: str, client: str) -> str:
+    title = client.replace("-", " ").title()
+    return text.replace("__CLIENT_SLUG__", client).replace("__CLIENT_TITLE__", title)
 
 
-def scaffold(client: str, projects_root: Path) -> dict:
+def scaffold(client: str, projects_root: Path, template_root: Path = TEMPLATE_ROOT) -> dict:
     if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", client):
         raise ValueError("INPUT-MISSING: client must be a kebab-case slug")
+    if not template_root.is_dir():
+        raise ValueError(f"TEMPLATE-MISSING: project skeleton not found: {template_root}")
+
+    projects_root = projects_root.resolve()
     project = projects_root.resolve() / client
-    if not (project / "context.md").is_file():
-        raise ValueError("BRAND-MISSING: create and approve project context.md first")
-    directories = [
-        project / "content/blog",
-        project / "content/service-page",
-        project / "content/product",
-        project / "scans",
-    ]
-    for directory in directories:
-        directory.mkdir(parents=True, exist_ok=True)
-    created = []
-    files = {
-        project / "content/blog/.gitkeep": "\n",
-        project / "content/service-page/.gitkeep": "\n",
-        project / "content/product/.gitkeep": "\n",
-        project / "scans/.gitkeep": "\n",
-        project / "publish-context.md": (
-            f"# {client} publish context\n\n"
-            "Site-specific decisions for workflow `wp-publish`. Keep brand/business facts in "
-            "`context.md`. After the read-only site scan, confirm fields, body H1 ownership, HTML "
-            "policy, SEO adapter and permissions for each content type before setting it ready.\n"
-        ),
-        project / "publish-context.json": json.dumps({
-            "version": 2,
-            "site_key": client,
-            "tracker": {"type": "none"},
-            "pilot_allowed": False,
-            "content_profiles": {
-                "blog": profile("posts", "post", "clean_article", ["edit_posts", "upload_files"]),
-                "service-page": profile("pages", "page", "preserve_builder", ["edit_pages", "upload_files"]),
-                "product": profile("product", "product", "preserve_builder", ["edit_products", "upload_files"]),
-            },
-            "timezone": "UTC",
-            "notes": "Run wp_site_scan.py, then confirm one profile at a time before enabling writes.",
-        }, ensure_ascii=False, indent=2) + "\n",
-    }
-    for path, text in files.items():
-        if write_new(path, text):
-            created.append(str(path.relative_to(projects_root.resolve())))
+    created: list[str] = []
+    template_files = sorted(path for path in template_root.rglob("*") if path.is_file())
+    for source in template_files:
+        relative = source.relative_to(template_root)
+        target = project / relative
+        text = render(source.read_text(encoding="utf-8"), client)
+        if write_new(target, text):
+            created.append(str(target.relative_to(projects_root)))
+
     legacy = project / "knowledge" / "publish-context.json"
     return {
         "project": str(project),
         "created": created,
-        "preserved": len(files) - len(created),
+        "preserved": len(template_files) - len(created),
+        "context_status": (
+            "created-needs-confirmation"
+            if str(Path(client) / "context.md") in created
+            else "preserved"
+        ),
         "legacy_publish_context": str(legacy) if legacy.exists() else None,
     }
 

@@ -39,7 +39,7 @@ Before a run, read [job-contract.md](references/job-contract.md),
 
 ## 3. First connection and first content type
 
-1. Scaffold the project with `scripts/wp_scaffold_project.py`.
+1. Scaffold the project from `templates/project-skeleton/` with `scripts/wp_scaffold_project.py`.
 2. Store all site credential variables in the root gitignored `.env.wp-publish` with mode `0600`.
    The parser reads this file directly; never source it into the shell or put secrets in AI context.
 3. Run `scripts/wp_site_scan.py`; it may use only GET and OPTIONS.

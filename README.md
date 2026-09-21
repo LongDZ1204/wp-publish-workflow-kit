@@ -23,7 +23,8 @@ skills/image-onpage/            Shared image preparation skill
 skills/strong-to-b/             Shared strong-to-b skill
 tools/strong-to-b/              Deterministic HTML engine
 workflows/wp-publish/           Contracts, discovery, state machine and tests
-templates/                      Safe starter files
+templates/project-skeleton/     Visible per-client folder template
+templates/wp-publish.env.example Credential format without secrets
 docs/                           Setup and optional Sheet documentation
 ```
 
@@ -50,9 +51,10 @@ H1 ownership, HTML policy, SEO meta, ảnh và quyền còn thiếu. Google Shee
 Kết thúc bằng READY FOR PILOT hoặc danh sách chính xác phần còn thiếu.
 ```
 
-Setup creates `projects/<client>/publish-context.json`, then the read-only scan writes a proposed
-profile under `projects/<client>/scans/`. Nothing is enabled until the user confirms the relevant
-content type. See [the beginner guide](docs/huong-dan-nguoi-moi.md) and
+Setup copies the visible `templates/project-skeleton/` to `projects/<client>/`, then the read-only
+scan writes a proposed profile under `projects/<client>/scans/`. Runtime projects are gitignored so
+client content and evidence are never packaged by accident. Nothing is enabled until the user
+confirms the relevant content type. See [the beginner guide](docs/huong-dan-nguoi-moi.md) and
 [the maintainer setup](docs/setup.md).
 
 ## Optional Google Sheet tracking

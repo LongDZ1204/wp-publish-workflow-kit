@@ -13,14 +13,14 @@ python3 -m pip install -r requirements-dev.txt
 ## 2. Create the project context
 
 ```bash
-mkdir -p projects/example-client
-cp templates/context.example.md projects/example-client/context.md
 python3 workflows/wp-publish/scripts/wp_scaffold_project.py --client example-client
 ```
 
-The scaffold creates `publish-context.json`, `scans/` and separate content folders for `blog`,
-`service-page` and `product`. It is idempotent and never overwrites existing context. Shared skills
-and tools remain at repository level.
+The command copies the visible `templates/project-skeleton/` into `projects/example-client/`, fills
+the client placeholders, and creates separate content folders for `blog`, `service-page` and
+`product`. It is idempotent and never overwrites existing files. Edit and confirm
+`projects/example-client/context.md` before enabling a publishing profile. Shared skills and tools
+remain at repository level.
 
 ## 3. Configure WordPress credentials
 

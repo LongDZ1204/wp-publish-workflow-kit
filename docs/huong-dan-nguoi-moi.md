@@ -360,17 +360,25 @@ thu-muc-lam-viec/
     │  PHẦN CÓ SẴN (code, public được)
     ├── skills/                        ← AI đọc để biết cách làm (5 skill)
     ├── workflows/                     ← luật + state machine + script
-    ├── templates/                     ← bản mẫu để copy
+    ├── templates/
+    │   └── project-skeleton/          ← cấu trúc project mẫu nhìn thấy ngay
     ├── docs/ · snippets/ · tools/
     │
     │  PHẦN SINH THÊM (dữ liệu riêng, .gitignore chặn khỏi Git)
     ├── .env.wp-publish                ← credential local, mode 0600
     └── projects/
-        └── ten-client/                ← AI sinh khi setup project
+        └── ten-client/                ← script sinh từ project-skeleton khi setup
             ├── context.md                        ← brand fact của client
+            ├── publish-context.md                ← ghi chú quyết định cách đăng
             ├── publish-context.json              ← profile blog/service/product
             ├── scans/                            ← kết quả scan read-only + đề xuất
             └── content/                          ← tách blog/service-page/product
+```
+
+Tạo toàn bộ cấu trúc trên bằng một lệnh:
+
+```bash
+python3 workflows/wp-publish/scripts/wp_scaffold_project.py --client ten-client
 ```
 
 Muốn chuyển máy hoặc backup: zip cả thư mục, nhưng **xoá `.env.wp-publish` trước** (chỉ giữ ở máy).

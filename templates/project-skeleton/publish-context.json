@@ -1,9 +1,7 @@
 {
   "version": 2,
-  "site_key": "example-site",
-  "tracker": {
-    "type": "none"
-  },
+  "site_key": "__CLIENT_SLUG__",
+  "tracker": {"type": "none"},
   "pilot_allowed": false,
   "content_profiles": {
     "blog": {

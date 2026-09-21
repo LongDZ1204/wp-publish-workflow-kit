@@ -24,6 +24,10 @@ def main() -> int:
         ROOT / "skills" / "image-onpage" / "SKILL.md",
         ROOT / "skills" / "strong-to-b" / "SKILL.md",
         ROOT / "templates" / "wp-publish.env.example",
+        ROOT / "templates" / "project-skeleton" / "context.md",
+        ROOT / "templates" / "project-skeleton" / "publish-context.md",
+        ROOT / "templates" / "project-skeleton" / "publish-context.json",
+        ROOT / "templates" / "project-skeleton" / "content" / "README.md",
     ]
     missing = [str(p.relative_to(ROOT)) for p in required if not p.exists()]
     text = (WF / "CLAUDE.md").read_text(encoding="utf-8")
