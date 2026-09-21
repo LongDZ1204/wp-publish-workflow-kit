@@ -10,7 +10,7 @@ Usage:
   python3 wp_push_verify.py --site example-site --id 1220 --html new.html \
       --expect "Level of Detail vs LOD in Revit||LOD Specification 2025" \
       --keep "The main difference between LOD 300 and LOD 350"
-  [--claude-local PATH]  [--verify-only]  (verify-only: bỏ push, chỉ soi live)
+  [--credential-file PATH]  [--verify-only]  (verify-only: bỏ push, chỉ soi live)
 
 --expect: chuỗi câu MỚI phải xuất hiện live (ngăn bằng ||).
 --keep:   chuỗi vùng khóa phải CÒN live (ngăn bằng ||).
@@ -70,7 +70,7 @@ def main():
                     help="Chuoi phai thay live. Truyen nhieu lan -> cong don, "
                          "KHONG ghi de (an le 19/08: 3 expect chi kiem 1, van bao ALL GOOD).")
     ap.add_argument("--keep", default="")
-    ap.add_argument("--claude-local")
+    ap.add_argument("--credential-file", "--claude-local", dest="credential_file")
     ap.add_argument("--title", default=None, help="Optional: update the WordPress post title in the same call")
     ap.add_argument("--seo-adapter", choices=("yoast", "rankmath"),
                     help="SEO plugin used to map title and meta description")
@@ -86,7 +86,7 @@ def main():
                          "Bỏ qua: không assert H1 (apply-edits đã giữ nguyên số H1 bản gốc).")
     a = ap.parse_args()
 
-    base, user, app = load_credential(a.site, a.claude_local)
+    base, user, app = load_credential(a.site, credential_path=a.credential_file)
     content = open(a.html, encoding="utf-8").read()
     if a.expected_h1 is not None and h1_count(content) != a.expected_h1:
         sys.exit(f"ERR: HTML phải có {a.expected_h1} H1 (body_h1_count của site); hiện có {h1_count(content)}")

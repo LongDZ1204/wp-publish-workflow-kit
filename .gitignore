@@ -6,6 +6,7 @@ __pycache__/
 venv/
 .env
 .env.*
+.env.wp-publish
 CLAUDE.local.md
 
 # Runtime/client artifacts

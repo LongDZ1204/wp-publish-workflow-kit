@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import subprocess
 import tempfile
 import unittest
@@ -313,13 +314,66 @@ class CredentialSetupTests(unittest.TestCase):
         self.assertTrue(admin["administrator"])
 
     def test_existing_credential_requires_explicit_replace(self):
-        old = "### demo WordPress (REST API)\n- URL: https://old.example\n- User: old\n- App Password: old\n"
+        old = credential_setup.credential_block("demo", "https://old.example", "old", "old")
         new = credential_setup.credential_block("demo", "https://new.example", "new", "secret")
         with self.assertRaisesRegex(ValueError, "--replace"):
             credential_setup.update_text(old, "demo", new, replace=False)
         replaced = credential_setup.update_text(old, "demo", new, replace=True)
         self.assertIn("https://new.example", replaced)
         self.assertNotIn("https://old.example", replaced)
+
+    def test_env_credential_round_trip_uses_site_prefix(self):
+        text = credential_setup.credential_block(
+            "demo-site", "https://example.com", "wp-publish", "abcd efgh"
+        )
+        self.assertEqual(
+            credential_setup.WP_LIB.credential_from_env_text("demo-site", text),
+            ("https://example.com", "wp-publish", "abcd efgh"),
+        )
+        self.assertIn("WP_DEMO_SITE_APP_PASS", text)
+
+    def test_incomplete_env_entry_fails_closed(self):
+        with self.assertRaisesRegex(ValueError, "incomplete credential"):
+            credential_setup.WP_LIB.credential_from_env_text(
+                "demo", 'WP_DEMO_URL="https://example.com"\nWP_DEMO_USER="editor"\n'
+            )
+
+    def test_legacy_migration_keeps_multiple_sites(self):
+        legacy = (
+            "### demo WordPress (REST API)\n- URL: https://demo.example\n"
+            "- User: editor\n- App Password: one two\n\n"
+            "### second-site WordPress (REST API)\n- URL: https://second.example\n"
+            "- User: editor2\n- App Password: three four\n"
+        )
+        migrated, count = credential_setup.migrate_legacy_text("", legacy)
+        self.assertEqual(count, 2)
+        self.assertIn("WP_DEMO_URL", migrated)
+        self.assertIn("WP_SECOND_SITE_URL", migrated)
+        self.assertEqual(
+            credential_setup.WP_LIB.credential_from_env_text("second-site", migrated),
+            ("https://second.example", "editor2", "three four"),
+        )
+
+    def test_private_write_uses_owner_only_mode(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / ".env.wp-publish"
+            credential_setup.atomic_private_write(path, "SECRET=value\n")
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+
+    def test_loader_rejects_group_readable_env_file(self):
+        if os.name == "nt":
+            self.skipTest("POSIX permission bits are not enforced on Windows")
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / ".env.wp-publish"
+            path.write_text(
+                credential_setup.credential_block(
+                    "demo", "https://example.com", "editor", "secret"
+                ),
+                encoding="utf-8",
+            )
+            path.chmod(0o644)
+            with self.assertRaisesRegex(ValueError, "chmod 600"):
+                credential_setup.WP_LIB.load_credential("demo", credential_path=path)
 
     def test_macos_dialog_returns_secret_without_printing_it(self):
         completed = subprocess.CompletedProcess([], 0, stdout="abcd efgh\n", stderr="")

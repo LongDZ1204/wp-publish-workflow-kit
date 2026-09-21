@@ -23,12 +23,11 @@ shortcodes, tables, embeds, and media references.
 ## Credentials
 
 Use a dedicated WordPress Editor account. Do not use Administrator. The credential lives in the
-repository-ignored `CLAUDE.local.md`; the operator copies the block from
-`templates/CLAUDE.local.example.md` and fills in URL, user and Application Password. The optional
-validated path is `workflows/wp-publish/scripts/wp_setup_credentials.py` (masked dialog, capability
-check, refuses Administrator).
+repository-ignored `.env.wp-publish`; the operator can copy `templates/wp-publish.env.example` or use
+`workflows/wp-publish/scripts/wp_setup_credentials.py` (masked dialog, capability check, mode `0600`,
+refuses Administrator). The file is parsed directly and must not be sourced into the shell.
 
-Temporary environment variables are an advanced alternative:
+Temporary process environment variables are an advanced alternative:
 
 ```bash
 export WP_URL='https://example.com'

@@ -10,7 +10,7 @@
 ## Website
 
 - [ ] Domain và `site_key` đúng.
-- [ ] Khối credential đã dán đúng format vào `CLAUDE.local.md` (URL/User/App Password, user role Editor).
+- [ ] Credential đã lưu đúng prefix site trong `.env.wp-publish`, quyền file `0600`.
 - [ ] Đã chạy site scan read-only; không dùng Administrator chỉ để vượt setup.
 - [ ] Content type đầu tiên đã xác nhận endpoint, field, H1 ownership và HTML policy.
 - [ ] `seo_meta_adapter` là `yoast` hoặc `rankmath` và đã test REST.

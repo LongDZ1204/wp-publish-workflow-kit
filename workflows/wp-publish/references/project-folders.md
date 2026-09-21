@@ -15,7 +15,7 @@ projects/<client>/
 Each item folder may contain `intake/`, `assets/`, `bundle/`, `backups/` and `runs/`. Keep content,
 images and evidence with their project and content type. Skills, workflows and deterministic tools
 remain shared at repository level. All site credentials remain together in the root gitignored
-`CLAUDE.local.md`.
+`.env.wp-publish`, parsed directly with mode `0600` and never sourced into the shell.
 
 Scaffolding is non-destructive. A legacy `knowledge/publish-context.json` is reported and preserved;
 it is not silently migrated or overwritten.

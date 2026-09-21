@@ -31,7 +31,7 @@ docs/                           Setup and optional Sheet documentation
 
 - Python 3.10+
 - A dedicated WordPress account with the exact capabilities reported by the read-only scan
-- An Application Password stored only in the root `CLAUDE.local.md`
+- An Application Password stored only in the root `.env.wp-publish` with file mode `0600`
 - Content plus any referenced images; the initial adapters are Markdown, HTML and Google Doc export
 - `Pillow`, `certifi`, and `beautifulsoup4`; `pytest` for development tests
 
@@ -44,7 +44,7 @@ Hãy cài WP Publish Workflow Kit từ:
 https://github.com/LongDZ1204/wp-publish-workflow-kit
 
 Setup project cho [website/domain]. Chỉ scaffold và chạy site scan read-only; chưa ghi WordPress.
-Credential dùng user riêng, lưu trong CLAUDE.local.md và không nhận password qua chat.
+Credential dùng user riêng, lưu trong .env.wp-publish và không nhận password qua chat.
 Sau scan, hãy đề xuất rồi hỏi tôi xác nhận profile blog/service-page/product: endpoint, field bắt buộc,
 H1 ownership, HTML policy, SEO meta, ảnh và quyền còn thiếu. Google Sheet để type=none nếu tôi chưa dùng.
 Kết thúc bằng READY FOR PILOT hoặc danh sách chính xác phần còn thiếu.

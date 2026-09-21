@@ -33,5 +33,5 @@ gate every job, show one exact batch manifest/hash, and ask once; each job still
 independently.
 
 For a new project, scaffold first, run the read-only site scan, and ask the user to confirm the first
-content-type profile before enabling it. Credentials stay in one ignored root `CLAUDE.local.md`; do
+content-type profile before enabling it. Credentials stay in one ignored root `.env.wp-publish`; do
 not copy secrets into project folders, jobs, logs or Git.

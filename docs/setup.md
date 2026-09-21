@@ -33,9 +33,20 @@ python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
   --input-mode dialog
 ```
 
-The native masked dialog verifies the account and stores one site block in the root, ignored
-`CLAUDE.local.md` with mode `0600`. Multiple sites share that one local credential file. Never put a
-password in chat, a project context, a job, a Sheet or a command argument.
+The native masked dialog verifies the account and stores three site-prefixed variables in the root,
+ignored `.env.wp-publish` with mode `0600`. Multiple sites share that one file. The parser reads it
+directly; do not `source` it into the shell. Never put a password in chat, project context, job,
+Sheet or command argument.
+
+Existing installs can migrate without deleting the legacy file:
+
+```bash
+python3 workflows/wp-publish/scripts/wp_setup_credentials.py --migrate-legacy
+```
+
+After verifying the new file works, securely delete the old local file yourself. Do not revoke the
+Application Password unless you also intend to rotate it. The migration command never deletes the
+legacy file automatically.
 
 ## 4. Run read-only discovery
 

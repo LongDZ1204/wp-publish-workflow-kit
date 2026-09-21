@@ -23,6 +23,7 @@ def main() -> int:
         ROOT / "skills" / "wp-rest-publish" / "SKILL.md",
         ROOT / "skills" / "image-onpage" / "SKILL.md",
         ROOT / "skills" / "strong-to-b" / "SKILL.md",
+        ROOT / "templates" / "wp-publish.env.example",
     ]
     missing = [str(p.relative_to(ROOT)) for p in required if not p.exists()]
     text = (WF / "CLAUDE.md").read_text(encoding="utf-8")

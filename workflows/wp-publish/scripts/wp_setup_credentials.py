@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import getpass
 import importlib.util
+import json
 import os
 import platform
 import re
@@ -148,18 +149,27 @@ def assess_user(profile: dict) -> dict:
     }
 
 
+def env_prefix(site_key: str) -> str:
+    return "WP_" + re.sub(r"[^A-Za-z0-9]+", "_", site_key).strip("_").upper()
+
+
+def dotenv_value(value: str) -> str:
+    return json.dumps(value, ensure_ascii=False)
+
+
 def credential_block(site_key: str, url: str, user: str, app_password: str) -> str:
+    prefix = env_prefix(site_key)
     return (
-        f"### {site_key} WordPress (REST API)\n"
-        f"- URL: {url}\n"
-        f"- User: {user}\n"
-        f"- App Password: {app_password.strip()}\n"
+        f"# site: {site_key}\n"
+        f"{prefix}_URL={dotenv_value(url)}\n"
+        f"{prefix}_USER={dotenv_value(user)}\n"
+        f"{prefix}_APP_PASS={dotenv_value(app_password.strip())}\n"
     )
 
 
 def update_text(current: str, site_key: str, block: str, replace: bool) -> str:
     pattern = re.compile(
-        rf"(?ms)^###\s+{re.escape(site_key)}\s+WordPress\s+\(REST API\)\s*$.*?(?=^###\s+|\Z)",
+        rf"(?ms)^#\s*site:\s*{re.escape(site_key)}\s*$.*?(?=^#\s*site:\s*|\Z)",
         flags=re.IGNORECASE,
     )
     match = pattern.search(current)
@@ -169,6 +179,38 @@ def update_text(current: str, site_key: str, block: str, replace: bool) -> str:
         return (current[:match.start()] + block + current[match.end():]).strip() + "\n"
     prefix = current.strip()
     return (prefix + "\n\n" if prefix else "") + block
+
+
+def parse_legacy_credentials(text: str) -> list[tuple[str, str, str, str]]:
+    result = []
+    blocks = re.split(r"(?m)^#{2,4}\s+", text)
+    for block in blocks:
+        if not block.strip():
+            continue
+        heading = block.splitlines()[0].strip()
+        match = re.match(r"(.+?)\s+WordPress\s+\(REST API\)\s*$", heading, re.IGNORECASE)
+        if not match:
+            continue
+        site_key = match.group(1).strip().lower()
+        url = WP_LIB._grab(block, "URL")
+        user = WP_LIB._grab(block, "User")
+        app = WP_LIB._grab(block, "App Password") or WP_LIB._grab(block, "Application Password")
+        if url and user and app:
+            validate_inputs(site_key, url, user)
+            result.append((site_key, url.rstrip("/"), user, app))
+    if not result:
+        raise ValueError("no WordPress credential blocks found in legacy file")
+    return result
+
+
+def migrate_legacy_text(current: str, legacy: str, replace: bool = False) -> tuple[str, int]:
+    updated = current
+    entries = parse_legacy_credentials(legacy)
+    for site_key, url, user, app_password in entries:
+        updated = update_text(
+            updated, site_key, credential_block(site_key, url, user, app_password), replace
+        )
+    return updated, len(entries)
 
 
 def atomic_private_write(path: Path, text: str) -> None:
@@ -187,10 +229,14 @@ def atomic_private_write(path: Path, text: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--site-key", required=True)
-    parser.add_argument("--url", required=True)
-    parser.add_argument("--user", required=True)
-    parser.add_argument("--output", default="CLAUDE.local.md")
+    parser.add_argument("--site-key")
+    parser.add_argument("--url")
+    parser.add_argument("--user")
+    parser.add_argument("--output", default=".env.wp-publish")
+    parser.add_argument(
+        "--migrate-legacy", nargs="?", const="CLAUDE.local.md",
+        help="Migrate all legacy Markdown credential blocks; the source file is retained",
+    )
     parser.add_argument(
         "--input-mode",
         choices=("auto", "dialog", "terminal"),
@@ -200,6 +246,21 @@ def main() -> int:
     parser.add_argument("--replace", action="store_true", help="Replace an existing block for this site")
     args = parser.parse_args()
     try:
+        output = Path(args.output).expanduser().resolve()
+        current = output.read_text(encoding="utf-8") if output.exists() else ""
+        if args.migrate_legacy:
+            legacy_path = Path(args.migrate_legacy).expanduser().resolve()
+            updated, count = migrate_legacy_text(
+                current, legacy_path.read_text(encoding="utf-8"), args.replace
+            )
+            atomic_private_write(output, updated)
+            print(
+                f"OK migrated_sites={count} credential_file={output} mode=0600 "
+                f"legacy_retained={legacy_path}"
+            )
+            return 0
+        if not (args.site_key and args.url and args.user):
+            raise ValueError("--site-key, --url and --user are required unless --migrate-legacy is used")
         site_key, base_url, username = validate_inputs(args.site_key, args.url, args.user)
         app_password = collect_password(site_key, args.input_mode).strip()
         if not app_password:
@@ -218,8 +279,6 @@ def main() -> int:
         if assessment["missing_capabilities"]:
             missing = ", ".join(assessment["missing_capabilities"])
             raise ValueError(f"WordPress user lacks required capabilities: {missing}")
-        output = Path(args.output).expanduser().resolve()
-        current = output.read_text(encoding="utf-8") if output.exists() else ""
         updated = update_text(
             current,
             site_key,

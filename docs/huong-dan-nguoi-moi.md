@@ -22,7 +22,7 @@ Hỏi tôi lần lượt từng thông tin còn thiếu, mỗi lần giải thí
 Sau khi kết nối, chạy site scan read-only rồi đề xuất profile riêng cho blog/service-page/product.
 Hỏi tôi xác nhận field, H1 ownership, HTML policy, SEO meta, ảnh và quyền còn thiếu cho loại đầu tiên.
 Google Sheet là tùy chọn; để tracker.type=none nếu tôi chưa dùng.
-Application Password tôi tự dán vào CLAUDE.local.md theo template ở Bước 3; bạn không nhận password qua chat.
+Application Password tôi tự lưu vào .env.wp-publish theo template ở Bước 3; bạn không nhận password qua chat.
 Khi hoàn tất, báo rõ READY FOR PILOT hoặc danh sách phần còn thiếu.
 ```
 
@@ -89,32 +89,35 @@ Làm lần lượt:
 6. Copy mật khẩu ngay. WordPress chỉ hiển thị đầy đủ một lần.
 7. Giữ mật khẩu trong clipboard và chuyển sang bước lưu bên dưới.
 
-## Bước 3 — Tự dán Application Password vào file bảo mật (không cần AI)
+## Bước 3 — Lưu Application Password vào file bảo mật
 
-Credential chỉ là một khối văn bản trong file `CLAUDE.local.md` ở thư mục gốc kit — file này đã bị
-`.gitignore` chặn nên không bao giờ lên Git. Bạn tự làm, không cần AI hay lệnh nào:
+Credential nằm trong `.env.wp-publish` ở thư mục gốc kit. File đã bị `.gitignore` chặn, được đặt
+quyền `0600` và được parser đọc trực tiếp — không chạy `source .env.wp-publish`.
 
-1. Mở `templates/CLAUDE.local.example.md`, copy toàn bộ nội dung thành file mới `CLAUDE.local.md`
-   ở thư mục gốc kit (Notepad hoặc TextEdit đều mở được).
-2. Điền giá trị thật vào khối mẫu:
+Cách khuyến nghị là chạy script setup; password được nhập trong hộp thoại che nội dung:
 
-   ```markdown
-   ### ten-ngan WordPress (REST API)
-   - URL: https://domain.com
-   - User: wp-publish
-   - App Password: xxxx xxxx xxxx xxxx xxxx xxxx
-   ```
+```bash
+python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
+  --site-key ten-ngan --url https://domain.com --user wp-publish --input-mode dialog
+```
 
-   - `ten-ngan`: tên ngắn bạn đặt cho site (dùng lại ở các bước sau).
-   - App Password dán nguyên xi như WordPress cấp, kể cả các dấu cách.
-3. Lưu file. Xong — mọi script của kit tự đọc file này, password không bao giờ nằm trên dòng lệnh.
+Nếu cần nhập tay, copy `templates/wp-publish.env.example` thành `.env.wp-publish`, rồi dùng prefix
+site viết hoa, thay dấu gạch ngang bằng gạch dưới. Sau khi lưu, đặt quyền file bằng
+`chmod 600 .env.wp-publish`:
 
-Nếu thư mục đã có sẵn `CLAUDE.local.md` (site trước đó đã làm): KHÔNG ghi đè file — chỉ thêm
-một khối mẫu vào cuối file rồi điền giá trị site mới. Dùng nhiều site thì mỗi site một khối
-trong cùng file, script tự chọn khối theo tên site hoặc domain. Muốn thêm vòng kiểm tra tự động
-(đăng nhập + role, chặn Administrator) thì chạy
-`python3 workflows/wp-publish/scripts/wp_setup_credentials.py --site-key ten-ngan --url https://domain.com --user wp-publish`
-— không bắt buộc.
+```dotenv
+# site: ten-ngan
+WP_TEN_NGAN_URL="https://domain.com"
+WP_TEN_NGAN_USER="wp-publish"
+WP_TEN_NGAN_APP_PASS="xxxx xxxx xxxx xxxx xxxx xxxx"
+```
+
+Dùng nhiều site thì thêm ba biến với prefix khác trong cùng file. Nếu bản cũ đã có
+`CLAUDE.local.md`, chạy lệnh dưới để migrate; lệnh giữ nguyên file cũ để bạn tự xóa sau khi kiểm tra:
+
+```bash
+python3 workflows/wp-publish/scripts/wp_setup_credentials.py --migrate-legacy
+```
 
 Không dán mật khẩu vào chat, Google Sheet, Google Doc hay file nào khác.
 
@@ -361,7 +364,7 @@ thu-muc-lam-viec/
     ├── docs/ · snippets/ · tools/
     │
     │  PHẦN SINH THÊM (dữ liệu riêng, .gitignore chặn khỏi Git)
-    ├── CLAUDE.local.md                ← bạn tự tạo ở Bước 3 (credential)
+    ├── .env.wp-publish                ← credential local, mode 0600
     └── projects/
         └── ten-client/                ← AI sinh khi setup project
             ├── context.md                        ← brand fact của client
@@ -370,7 +373,7 @@ thu-muc-lam-viec/
             └── content/                          ← tách blog/service-page/product
 ```
 
-Muốn chuyển máy hoặc backup: zip cả thư mục, nhưng **xoá `CLAUDE.local.md` trước** (chỉ giữ ở máy).
+Muốn chuyển máy hoặc backup: zip cả thư mục, nhưng **xoá `.env.wp-publish` trước** (chỉ giữ ở máy).
 
 ## Quy tắc an toàn cần nhớ
 
