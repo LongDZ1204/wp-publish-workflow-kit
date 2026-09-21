@@ -14,9 +14,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def _load_bundle_lib():
-    path = ROOT / "skills" / "wp-publish-new" / "scripts" / "wp_bundle.py"
-    spec = importlib.util.spec_from_file_location("wp_batch_bundle_lib", path)
+def _load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {path}")
     module = importlib.util.module_from_spec(spec)
@@ -24,7 +23,10 @@ def _load_bundle_lib():
     return module
 
 
-BUNDLE = _load_bundle_lib()
+BUNDLE = _load_module(
+    "wp_batch_bundle_lib", ROOT / "skills" / "wp-publish-new" / "scripts" / "wp_bundle.py",
+)
+PROFILE = _load_module("wp_batch_profile_lib", Path(__file__).with_name("wp_profile_status.py"))
 
 
 def file_sha256(path: Path) -> str:
@@ -51,22 +53,53 @@ def inspect_bundle(bundle: Path) -> dict:
     }
 
 
-def build_manifest(batch_id: str, bundles: list[Path]) -> dict:
+def build_manifest(batch_id: str, bundles: list[Path], publish_context_path: Path) -> dict:
     if not batch_id.strip() or not bundles:
         raise ValueError("INPUT-MISSING: batch_id/bundle")
     jobs = sorted((inspect_bundle(path) for path in bundles), key=lambda item: item["job_id"])
     ids = [item["job_id"] for item in jobs]
     if len(ids) != len(set(ids)):
         raise ValueError("ROUTE-CONFLICT: duplicate job_id in batch")
+    publish_context_path = publish_context_path.resolve()
+    context = PROFILE.load_context(publish_context_path)
+    profile_hashes = {}
+    for content_type in sorted({item["content_type"] for item in jobs}):
+        profile = PROFILE.get_profile(context, content_type)
+        if not (
+            profile.get("status") == "batch-ready"
+            and profile.get("ready") is True
+            and profile.get("batch_ready") is True
+        ):
+            raise ValueError(f"BRAND-MISSING: content profile {content_type} is not batch-ready")
+        profile_hashes[content_type] = PROFILE.profile_hash(profile)
     return {
-        "version": 1,
+        "version": 2,
         "batch_id": batch_id,
         "created_at": datetime.now(timezone.utc).isoformat(),
+        "publish_context": str(publish_context_path),
+        "profile_hashes": profile_hashes,
         "jobs": jobs,
     }
 
 
 def verify_manifest(manifest: dict) -> None:
+    if manifest.get("version") != 2 or not manifest.get("publish_context"):
+        raise ValueError("BRAND-MISSING: batch manifest v2 with publish context is required")
+    context = PROFILE.load_context(Path(manifest["publish_context"]))
+    profile_hashes = manifest.get("profile_hashes") or {}
+    job_types = {item.get("content_type", "blog") for item in manifest.get("jobs", [])}
+    if set(profile_hashes) != job_types:
+        raise ValueError("BRAND-MISSING: batch profile hashes do not match job content types")
+    for content_type, expected_hash in profile_hashes.items():
+        profile = PROFILE.get_profile(context, content_type)
+        if not (
+            profile.get("status") == "batch-ready"
+            and profile.get("ready") is True
+            and profile.get("batch_ready") is True
+        ):
+            raise ValueError(f"BRAND-MISSING: content profile {content_type} is not batch-ready")
+        if PROFILE.profile_hash(profile) != expected_hash:
+            raise ValueError(f"SOURCE-STALE: content profile changed: {content_type}")
     for item in manifest.get("jobs", []):
         current = inspect_bundle(Path(item["bundle"]))
         if current["job_id"] != item.get("job_id") or current["bundle_hash"] != item.get("bundle_hash"):
@@ -106,6 +139,7 @@ def main() -> int:
     build = sub.add_parser("build")
     build.add_argument("--batch-id", required=True)
     build.add_argument("--bundle", action="append", required=True)
+    build.add_argument("--profile", required=True, help="Project publish-context.json")
     build.add_argument("--out", required=True)
     approve = sub.add_parser("approve")
     approve.add_argument("--manifest", required=True)
@@ -117,7 +151,9 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.command == "build":
-            manifest = build_manifest(args.batch_id, [Path(path) for path in args.bundle])
+            manifest = build_manifest(
+                args.batch_id, [Path(path) for path in args.bundle], Path(args.profile),
+            )
             output = Path(args.out)
             BUNDLE.atomic_json(output, manifest)
             print(f"OK jobs={len(manifest['jobs'])} manifest_hash={file_sha256(output)}")

@@ -29,6 +29,7 @@ job_contract = load("wp_job_contract")
 intake_mod = load("wp_intake")
 site_scan = load("wp_site_scan")
 batch_approval = load("wp_batch_approval")
+profile_status = load("wp_profile_status")
 
 
 class SheetContractTests(unittest.TestCase):
@@ -138,10 +139,29 @@ class SiteScanTests(unittest.TestCase):
         self.assertTrue(all(method in {"GET", "OPTIONS"} for method, _ in calls))
         self.assertEqual(result["profiles"]["product"]["post_type"], "product")
         self.assertEqual(result["profiles"]["product"]["endpoint"], "products")
+        self.assertEqual(result["profiles"]["blog"]["status"], "unconfirmed")
+        self.assertFalse(result["profiles"]["blog"]["batch_ready"])
         self.assertIn("edit_products", result["profiles"]["product"]["missing_capabilities"])
 
 
 class BatchApprovalTests(unittest.TestCase):
+    def make_context(self, root: Path, batch_ready: bool = True) -> Path:
+        path = root / "publish-context.json"
+        status = "batch-ready" if batch_ready else "pilot-ready"
+        path.write_text(json.dumps({
+            "version": 2,
+            "content_profiles": {
+                "blog": {
+                    "status": status,
+                    "ready": batch_ready,
+                    "batch_ready": batch_ready,
+                    "endpoint": "posts",
+                    "schema_hash": "schema-1",
+                }
+            },
+        }), encoding="utf-8")
+        return path
+
     def make_bundle(self, root: Path, job_id: str) -> Path:
         bundle = root / job_id
         bundle.mkdir()
@@ -167,7 +187,8 @@ class BatchApprovalTests(unittest.TestCase):
             root = Path(td)
             first = self.make_bundle(root, "job-a")
             second = self.make_bundle(root, "job-b")
-            manifest = batch_approval.build_manifest("batch-1", [second, first])
+            context = self.make_context(root)
+            manifest = batch_approval.build_manifest("batch-1", [second, first], context)
             manifest_path = root / "batch-manifest.json"
             batch_approval.BUNDLE.atomic_json(manifest_path, manifest)
             digest = batch_approval.file_sha256(manifest_path)
@@ -178,6 +199,104 @@ class BatchApprovalTests(unittest.TestCase):
             (second / "content.prepared.html").write_text("changed", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "SOURCE-STALE"):
                 batch_approval.verify_manifest(manifest)
+
+    def test_batch_rejects_profile_that_has_not_passed_pilot(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            bundle = self.make_bundle(root, "job-a")
+            context = self.make_context(root, batch_ready=False)
+            with self.assertRaisesRegex(ValueError, "not batch-ready"):
+                batch_approval.build_manifest("batch-1", [bundle], context)
+
+    def test_batch_manifest_stops_when_certified_profile_changes(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            bundle = self.make_bundle(root, "job-a")
+            context_path = self.make_context(root)
+            manifest = batch_approval.build_manifest("batch-1", [bundle], context_path)
+            context = json.loads(context_path.read_text(encoding="utf-8"))
+            context["content_profiles"]["blog"]["endpoint"] = "changed-posts"
+            context_path.write_text(json.dumps(context), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "content profile changed"):
+                batch_approval.verify_manifest(manifest)
+
+
+class ProfileStatusTests(unittest.TestCase):
+    def make_context(self, root: Path) -> Path:
+        path = root / "publish-context.json"
+        path.write_text(json.dumps({
+            "version": 2,
+            "content_profiles": {
+                "blog": {
+                    "endpoint": "posts", "post_type": "post", "status": "unconfirmed",
+                    "ready": False, "pilot_allowed": False, "batch_ready": False,
+                    "body_h1_count": 0, "html_policy": "clean_article",
+                    "required_fields": ["title", "content", "slug"],
+                    "required_capabilities": ["edit_posts", "upload_files"],
+                    "missing_capabilities": [], "schema_hash": "schema-1",
+                    "image_policy": {"format_policy": "preserve", "max_kb": 150, "max_width": 1200},
+                    "seo_meta_adapter": "yoast",
+                }
+            },
+        }), encoding="utf-8")
+        return path
+
+    def test_confirm_then_certify_enables_only_tested_profile_for_batch(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            context_path = self.make_context(root)
+            confirmed = profile_status.confirm(context_path, "blog", "operator", "schema-1")
+            self.assertEqual(confirmed["status"], "pilot-ready")
+            context = profile_status.load_context(context_path)
+            profile = profile_status.get_profile(context, "blog")
+            self.assertTrue(profile["pilot_allowed"])
+            self.assertFalse(profile["batch_ready"])
+
+            bundle = root / "bundle"
+            bundle.mkdir()
+            (bundle / "publish-request.json").write_text(json.dumps({
+                "job_id": "pilot-blog", "run_id": "run-1", "content_type": "blog",
+            }), encoding="utf-8")
+            (bundle / "run-state.json").write_text(json.dumps({
+                "job_id": "pilot-blog", "run_id": "run-1", "pilot": True,
+                "verified": True, "wp_status": "draft", "content_type": "blog",
+                "post_id": 42, "profile_hash": profile_status.profile_hash(profile),
+            }), encoding="utf-8")
+            render = root / "render-report.json"
+            render.write_text(json.dumps({
+                "ok": True, "post_id": 42,
+                "checks": {name: True for name in profile_status.RENDER_CHECKS},
+            }), encoding="utf-8")
+            certified = profile_status.certify(
+                context_path, "blog", bundle, render, "operator",
+            )
+            self.assertEqual(certified["status"], "batch-ready")
+            profile = profile_status.get_profile(profile_status.load_context(context_path), "blog")
+            self.assertTrue(profile["ready"])
+            self.assertTrue(profile["batch_ready"])
+            self.assertFalse(profile["pilot_allowed"])
+
+    def test_render_qa_must_be_complete_before_batch_ready(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            context_path = self.make_context(root)
+            profile_status.confirm(context_path, "blog", "operator")
+            profile = profile_status.get_profile(profile_status.load_context(context_path), "blog")
+            bundle = root / "bundle"
+            bundle.mkdir()
+            (bundle / "publish-request.json").write_text(
+                '{"job_id":"pilot-blog","run_id":"run-1","content_type":"blog"}',
+                encoding="utf-8",
+            )
+            (bundle / "run-state.json").write_text(json.dumps({
+                "job_id": "pilot-blog", "run_id": "run-1", "pilot": True,
+                "verified": True, "wp_status": "draft", "content_type": "blog",
+                "post_id": 42, "profile_hash": profile_status.profile_hash(profile),
+            }), encoding="utf-8")
+            render = root / "render-report.json"
+            render.write_text('{"ok":false,"post_id":42,"checks":{}}', encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "rendered QA incomplete"):
+                profile_status.certify(context_path, "blog", bundle, render, "operator")
 
 
 class RouteTests(unittest.TestCase):
@@ -288,7 +407,9 @@ class ProjectScaffoldTests(unittest.TestCase):
             generated = json.loads(profile.read_text(encoding="utf-8"))
             self.assertEqual(generated["site_key"], "demo-client")
             self.assertFalse(generated["content_profiles"]["blog"]["ready"])
-            self.assertFalse(generated["pilot_allowed"])
+            self.assertEqual(generated["content_profiles"]["blog"]["status"], "unconfirmed")
+            self.assertFalse(generated["content_profiles"]["blog"]["pilot_allowed"])
+            self.assertFalse(generated["content_profiles"]["blog"]["batch_ready"])
             self.assertEqual(generated["tracker"], {"type": "none"})
             self.assertEqual(generated["timezone"], "UTC")
             profile.write_text('{"ready": true}\n', encoding="utf-8")

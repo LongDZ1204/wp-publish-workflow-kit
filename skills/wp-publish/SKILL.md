@@ -30,8 +30,9 @@ prerequisite. Never infer or switch route from a slug.
 
 For a bulk request, also read `../../workflows/wp-publish/references/batch-approval.md`. Prepare and
 gate every job, show one exact batch manifest/hash, and ask once; each job still executes and verifies
-independently.
+independently. Batch creation is allowed only for content-type profiles certified `batch-ready`.
 
-For a new project, scaffold first, run the read-only site scan, and ask the user to confirm the first
-content-type profile before enabling it. Credentials stay in one ignored root `.env.wp-publish`; do
-not copy secrets into project folders, jobs, logs or Git.
+For a new project, scaffold and scan read-only, then confirm project-wide context only. Confirm a
+content-type profile just in time when the user first requests that type; after one approved draft
+pilot passes REST readback and rendered QA, certify only that profile for batch use. Credentials stay
+in one ignored root `.env.wp-publish`; do not copy secrets into project folders, jobs, logs or Git.

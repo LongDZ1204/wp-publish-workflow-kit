@@ -19,8 +19,9 @@ https://github.com/LongDZ1204/wp-publish-workflow-kit
 Hãy setup project cho website [điền tên website/domain].
 Chỉ cài và chạy kiểm tra read-only, chưa tạo hoặc cập nhật bài trên WordPress.
 Hỏi tôi lần lượt từng thông tin còn thiếu, mỗi lần giải thích ngắn cách lấy.
-Sau khi kết nối, chạy site scan read-only rồi đề xuất profile riêng cho blog/service-page/product.
-Hỏi tôi xác nhận field, H1 ownership, HTML policy, SEO meta, ảnh và quyền còn thiếu cho loại đầu tiên.
+Sau khi kết nối, chạy site scan read-only và chỉ xác nhận context chung của project.
+Khi tôi yêu cầu blog/service-page/product, chỉ hỏi profile của đúng loại đó ngay lúc cần.
+Chạy một draft pilot; chỉ bật đăng hàng loạt cho loại đó sau REST readback và rendered QA đạt.
 Google Sheet là tùy chọn; để tracker.type=none nếu tôi chưa dùng.
 Application Password tôi tự lưu vào .env.wp-publish theo template ở Bước 3; bạn không nhận password qua chat.
 Khi hoàn tất, báo rõ READY FOR PILOT hoặc danh sách phần còn thiếu.
@@ -344,6 +345,14 @@ Kết quả đúng:
 - nếu có Sheet, dòng chuyển sang `Chờ đăng` và có URL draft;
 - chạy lại không tạo bài hoặc ảnh trùng.
 
+Sau đó AI phải mở bản Nháp bằng phiên đã đăng nhập và kiểm tra giao diện thật: nội dung, ảnh, heading,
+link và SEO metadata. Khi REST readback lẫn năm kiểm tra render đều đạt, workflow lưu bằng chứng và
+chuyển **đúng loại nội dung vừa test** sang `batch-ready`.
+
+Từ thời điểm đó, các bài cùng loại có thể chạy hàng loạt: AI chuẩn bị toàn bộ bundle, đưa một manifest
+tổng hợp để bạn duyệt một lần, rồi tạo từng draft và readback từng bài. Không hỏi lại từng bài, nhưng
+bài lỗi sẽ dừng riêng và được liệt kê trong báo cáo batch.
+
 ## Khi nào dùng AUDIT?
 
 Chỉ dùng `AUDIT` khi bài đã tồn tại trên WordPress. Workflow phải kéo HTML hiện tại, tạo backup, trình
@@ -391,6 +400,7 @@ Muốn chuyển máy hoặc backup: zip cả thư mục, nhưng **xoá `.env.wp-
 4. Không gửi mật khẩu vào Sheet, Doc hoặc GitHub.
 5. AI phải dừng xin duyệt trước khi ghi WordPress.
 6. Chỉ gọi là hoàn tất sau khi đọc lại WordPress và tracker (nếu đã bật) đều khớp.
+7. Pilot blog chỉ mở batch cho blog; service page và product vẫn phải xác nhận/test khi được yêu cầu.
 
 Phần cài thủ công dành cho người kỹ thuật nằm ở [setup.md](setup.md). Checklist ngắn nằm ở
 [checklist-chuan-bi.md](checklist-chuan-bi.md).

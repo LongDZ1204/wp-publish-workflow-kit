@@ -111,15 +111,26 @@ def validate(bundle: Path, profile: dict, phase: str, allow_pilot: bool = False)
     return report
 
 
+def select_profile(context: dict, content_type: str) -> dict:
+    if context.get("version") != 2:
+        return context
+    profile = (context.get("content_profiles") or {}).get(content_type)
+    if not isinstance(profile, dict):
+        raise ValueError(f"BRAND-MISSING: content profile {content_type}")
+    return profile
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--bundle", required=True)
     parser.add_argument("--profile", required=True)
+    parser.add_argument("--content-type", choices=("blog", "service-page", "product"), default="blog")
     parser.add_argument("--phase", choices=("prepared", "final"), required=True)
     parser.add_argument("--pilot", action="store_true", help="Allow an explicitly enabled draft-only pilot")
     args = parser.parse_args()
     try:
-        profile = json.loads(Path(args.profile).read_text(encoding="utf-8"))
+        context = json.loads(Path(args.profile).read_text(encoding="utf-8"))
+        profile = select_profile(context, args.content_type)
         report = validate(Path(args.bundle).resolve(), profile, args.phase, allow_pilot=args.pilot)
         print(f"OK phase={args.phase} images={report['image_count']} h1={report['h1_count']}")
         return 0

@@ -12,4 +12,5 @@ After the read-only site scan, confirm these fields separately for blog, service
 - image policy;
 - exact required capabilities.
 
-Only a confirmed content profile may be changed to `ready=true` in `publish-context.json`.
+Do not confirm unused profiles during setup. When a type is first requested, confirm it just in time,
+run one draft pilot, verify REST and rendered output, then certify only that type as `batch-ready`.

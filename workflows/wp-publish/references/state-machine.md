@@ -11,6 +11,15 @@ Any state → STOPPED
 STOPPED → state before the error after its condition is fixed
 ```
 
+Project profile readiness is a separate per-content-type state machine:
+
+```text
+unconfirmed → pilot-ready → batch-ready
+```
+
+Job completion does not implicitly change profile state. The explicit certification command requires
+the matching pilot run plus rendered-QA evidence before enabling batch use.
+
 `SHEET_VERIFIED` is accepted as a migration alias for `TRACKER_VERIFIED`. New state files use v2,
 `job_id`, `run_id` and a tracker object. A legacy `row_id` maps to `job_id=sheet:<row_id>`.
 

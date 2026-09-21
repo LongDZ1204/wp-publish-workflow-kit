@@ -129,6 +129,28 @@ class GateTests(unittest.TestCase):
 
 
 class DraftHelpersTests(unittest.TestCase):
+    def test_v2_write_profile_requires_jit_pilot_then_batch_certification(self):
+        context = {"version": 2, "content_profiles": {"blog": {
+            "status": "unconfirmed", "ready": False,
+            "pilot_allowed": False, "batch_ready": False,
+        }}}
+        with self.assertRaisesRegex(ValueError, "not pilot-ready"):
+            PUSH.select_write_profile(context, "blog", pilot=True)
+        context["content_profiles"]["blog"].update(
+            status="pilot-ready", pilot_allowed=True,
+        )
+        self.assertEqual(
+            PUSH.select_write_profile(context, "blog", pilot=True)["status"], "pilot-ready",
+        )
+        with self.assertRaisesRegex(ValueError, "not batch-ready"):
+            PUSH.select_write_profile(context, "blog", pilot=False)
+        context["content_profiles"]["blog"].update(
+            status="batch-ready", ready=True, pilot_allowed=False, batch_ready=True,
+        )
+        self.assertEqual(
+            PUSH.select_write_profile(context, "blog", pilot=False)["status"], "batch-ready",
+        )
+
     def test_replace_asset_tokens(self):
         manifest = {"images": [
             {"asset_id": "new", "action": "prepare-upload"},

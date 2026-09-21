@@ -2,12 +2,14 @@
   "version": 2,
   "site_key": "__CLIENT_SLUG__",
   "tracker": {"type": "none"},
-  "pilot_allowed": false,
   "content_profiles": {
     "blog": {
       "endpoint": "posts",
       "post_type": "post",
+      "status": "unconfirmed",
       "ready": false,
+      "pilot_allowed": false,
+      "batch_ready": false,
       "body_h1_count": null,
       "html_policy": "clean_article",
       "required_fields": ["title", "content", "slug"],
@@ -19,7 +21,10 @@
     "service-page": {
       "endpoint": "pages",
       "post_type": "page",
+      "status": "unconfirmed",
       "ready": false,
+      "pilot_allowed": false,
+      "batch_ready": false,
       "body_h1_count": null,
       "html_policy": "preserve_builder",
       "required_fields": ["title", "content", "slug"],
@@ -31,7 +36,10 @@
     "product": {
       "endpoint": "product",
       "post_type": "product",
+      "status": "unconfirmed",
       "ready": false,
+      "pilot_allowed": false,
+      "batch_ready": false,
       "body_h1_count": null,
       "html_policy": "preserve_builder",
       "required_fields": ["title", "content", "slug"],
@@ -42,5 +50,5 @@
     }
   },
   "timezone": "UTC",
-  "notes": "Run the read-only scan and confirm each content profile before enabling writes."
+  "notes": "Confirm a content profile only when requested; certify it batch-ready after a verified pilot."
 }

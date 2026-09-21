@@ -18,9 +18,10 @@ Read, in order:
 3. `projects/<client>/context.md`
 4. `projects/<client>/publish-context.json` (select the job's confirmed `content_type` profile)
 
-Do not run a write command unless the site publish context has `ready=true`. The only exception is a
-one-time, operator-approved draft pilot when the profile has `pilot_allowed=true`; pass `--pilot` to
-both the gate and executor. A pilot can never publish the post.
+Do not run a normal write unless the requested content-type profile has `status=batch-ready` and
+`ready=true`. The only exception is a one-time, operator-approved draft pilot when that profile has
+`status=pilot-ready` and `pilot_allowed=true`; pass `--pilot` to both the gate and executor. A pilot
+can never publish the post or enable another content type.
 
 ## Source and draft storage
 
@@ -59,7 +60,7 @@ python3 workflows/wp-publish/scripts/wp_strong.py \
 
 python3 skills/wp-publish-new/scripts/wp_gate.py \
   --bundle '<bundle-dir>' --profile 'projects/<client>/publish-context.json' \
-  --phase prepared
+  --content-type '<blog|service-page|product>' --phase prepared
 ```
 
 Only after operator explicitly approves the displayed bundle:
@@ -94,6 +95,10 @@ python3 skills/wp-publish-new/scripts/wp_push_draft.py \
 
 Append `--pilot` only for the explicitly enabled one-time pilot described above.
 
+After a pilot, inspect the authenticated draft render and write `render-report.json` with `ok=true`,
+the exact `post_id`, and true checks for `content`, `images`, `heading`, `links` and `seo_meta`. Then
+run `workflows/wp-publish/scripts/wp_profile_status.py certify`; only this transition enables batch.
+
 The executor uploads only `prepare-upload` assets, replaces `asset://<asset_id>` tokens, creates one
 draft, and immediately stores the returned post/media IDs. It refuses a blind retry after an
 uncertain POST; reconcile WordPress first and resume only the same `run_id`.
@@ -104,4 +109,4 @@ uncertain POST; reconcile WordPress first and resume only the same `run_id`.
 - Final HTML matches the profile's `body_h1_count` (0 when the theme's post title is the page H1).
 - Final HTML has no local path, Markdown image marker, or unresolved asset token.
 - WordPress GET `context=edit` matches title, slug, content and status `draft`.
-- The workflow has written and read back the same Sheet row.
+- The configured tracker, if any, has been written and read back.

@@ -19,6 +19,7 @@ def main() -> int:
         WF / "references" / "state-machine.md", WF / "references" / "error-codes.md",
         WF / "references" / "brand-publish-context.md", WF / "references" / "learning-policy.md",
         WF / "references" / "project-folders.md",
+        WF / "scripts" / "wp_profile_status.py",
         ROOT / "skills" / "wp-publish-new" / "SKILL.md",
         ROOT / "skills" / "wp-rest-publish" / "SKILL.md",
         ROOT / "skills" / "image-onpage" / "SKILL.md",

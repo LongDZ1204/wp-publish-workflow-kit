@@ -60,10 +60,19 @@ REST post types, taxonomies and endpoint schemas. It writes `site-scan.json` and
 `publish-context.proposed.json` under a timestamped `projects/example-client/scans/` folder; it does
 not overwrite the active profile.
 
-Review and confirm the profile for the first content type you will use: endpoint/post type, fields,
-taxonomies, H1 ownership, HTML policy, SEO meta, image policy and exact missing capabilities. Copy
-only confirmed values into `projects/example-client/publish-context.json` and set that profile's
-`ready=true`. Other content types remain disabled until separately confirmed.
+Confirm project-wide context after the scan, but leave all content profiles unconfirmed. When the
+user first requests a content type, review only that type's endpoint/post type, fields, taxonomies,
+H1 ownership, HTML policy, SEO meta, image policy and exact missing capabilities. Copy the confirmed
+values into `projects/example-client/publish-context.json`, then mark it pilot-ready:
+
+```bash
+python3 workflows/wp-publish/scripts/wp_profile_status.py confirm \
+  --context projects/example-client/publish-context.json \
+  --content-type blog --confirmed-by operator \
+  --expected-schema-hash '<hash-from-current-scan>'
+```
+
+Other content types remain `unconfirmed` until the user asks for them.
 
 ## 5. Prepare a tracker-free job
 
@@ -80,14 +89,46 @@ python3 workflows/wp-publish/scripts/wp_intake.py \
 The source may originate anywhere. Intake requires a readable content snapshot and a valid asset
 inventory; downstream gates enforce the confirmed site profile.
 
-## 6. Enable Google Sheets later (optional)
+## 6. Run and certify one draft pilot
+
+Prepare the requested type, obtain approval for its exact bundle hash, and execute one NEW draft with
+`--pilot`. After REST readback passes, inspect the authenticated draft render. Save evidence such as:
+
+```json
+{
+  "version": 1,
+  "ok": true,
+  "post_id": 123,
+  "checks": {
+    "content": true,
+    "images": true,
+    "heading": true,
+    "links": true,
+    "seo_meta": true
+  }
+}
+```
+
+Then certify only that content type:
+
+```bash
+python3 workflows/wp-publish/scripts/wp_profile_status.py certify \
+  --context projects/example-client/publish-context.json \
+  --content-type blog --bundle projects/example-client/content/blog/example/bundle \
+  --render-report render-report.json --certified-by operator
+```
+
+The profile is now `batch-ready`. Batch manifests bind its current hash and ask once for the exact
+set of prepared jobs; they do not ask again article by article.
+
+## 7. Enable Google Sheets later (optional)
 
 Follow [google-sheet-template.md](google-sheet-template.md), then change the project tracker to
 `google_sheet`. The Sheet adapter validates a row and emits the same job contract. A tracker-enabled
 run is complete only after Sheet writeback and readback; a tracker-free run completes after WordPress
 readback.
 
-## 7. Run checks
+## 8. Run checks
 
 ```bash
 python3 workflows/wp-publish/scripts/wp_selftest.py

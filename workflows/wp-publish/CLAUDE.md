@@ -13,6 +13,7 @@ Components remain shared across projects:
 - `skills/strong-to-b/` — deterministic HTML normalization.
 - `workflows/wp-publish/scripts/wp_intake.py` — immutable input snapshot.
 - `workflows/wp-publish/scripts/wp_site_scan.py` — read-only site discovery.
+- `workflows/wp-publish/scripts/wp_profile_status.py` — JIT confirmation and pilot certification.
 - `workflows/wp-publish/scripts/wp_setup_credentials.py` — optional masked credential setup.
 - `workflows/wp-publish/scripts/wp_learn.py` — records compact STOP/verify evidence for review.
 - `workflows/wp-publish/scripts/wp_batch_approval.py` — one approval for an exact gated batch.
@@ -37,17 +38,21 @@ Before a run, read [job-contract.md](references/job-contract.md),
 [intake-contract.md](references/intake-contract.md), [bundle-contract.md](references/bundle-contract.md),
 [state-machine.md](references/state-machine.md) and the two project context files.
 
-## 3. First connection and first content type
+## 3. First connection and just-in-time content profiles
 
 1. Scaffold the project from `templates/project-skeleton/` with `scripts/wp_scaffold_project.py`.
 2. Store all site credential variables in the root gitignored `.env.wp-publish` with mode `0600`.
    The parser reads this file directly; never source it into the shell or put secrets in AI context.
 3. Run `scripts/wp_site_scan.py`; it may use only GET and OPTIONS.
-4. Present the proposed blog/service-page/product profile and exact missing capabilities.
-5. Confirm endpoint, fields, H1 ownership, HTML policy, SEO meta and image policy with the user.
-6. Set only the confirmed content type to `ready=true`.
+4. Confirm only project-wide context during setup. Keep every content profile `unconfirmed`.
+5. When the user first requests a content type, present only that proposed profile and its exact
+   missing capabilities. Confirm endpoint, fields, H1 ownership, HTML policy, SEO meta and image
+   policy, then run `scripts/wp_profile_status.py confirm` to make it `pilot-ready`.
+6. Run one explicitly approved draft pilot for that type. After REST readback and rendered QA both
+   pass, run `scripts/wp_profile_status.py certify` to make only that type `batch-ready`.
 
-Do not invent site rules. The scan proposal is evidence, not active configuration.
+Do not ask the user to confirm unused content types. Detection is evidence, not confirmation, and a
+blog pilot never enables service pages or products.
 
 ## 4. Per-job pipeline
 
@@ -56,7 +61,8 @@ Do not invent site rules. The scan proposal is evidence, not active configuratio
 - Validate with `scripts/wp_job_contract.py`.
 - If the source is a Sheet row, first use `scripts/wp_sheet_contract.py`; it emits the same job.
 - Lock Markdown, HTML or a Google Doc export with `scripts/wp_intake.py`.
-- Load the matching confirmed content profile. Missing context or capability stops the run.
+- Load the matching profile. An `unconfirmed` type stops for JIT confirmation; a `pilot-ready` type
+  permits only an explicit `--pilot`; normal jobs require `status=batch-ready` and `ready=true`.
 - Initialize the atomic journal with `scripts/wp_state.py`.
 
 ### P1 — Route reconciliation (read-only)
@@ -82,7 +88,8 @@ invalidates approval and returns the run to preparation.
 
 For multiple jobs, read [batch-approval.md](references/batch-approval.md). Gate all bundles, present
 one complete manifest/hash, and request one confirmation for the batch. Each job still receives its
-own approval/state and WordPress readback; never approve future or changed jobs implicitly.
+own approval/state and WordPress readback. The manifest must load the project publish context and
+reject every content type not marked `batch-ready`; never approve future or changed jobs implicitly.
 
 ### P4 — WordPress write and readback
 
@@ -90,6 +97,9 @@ own approval/state and WordPress readback; never approve future or changed jobs 
 - AUDIT compares the fresh revision before writing.
 - Replace asset tokens only with verified WordPress media URLs.
 - GET the item with `context=edit` and compare ID, status, title, content and required meta.
+- A pilot records its content type and profile hash in `run-state.json`. Inspect the authenticated
+  draft render and record `content`, `images`, `heading`, `links` and `seo_meta` in
+  `render-report.json`; only then may `wp_profile_status.py certify` enable batch use.
 
 ### P5 — Optional tracker readback
 
@@ -102,6 +112,10 @@ own approval/state and WordPress readback; never approve future or changed jobs 
 A run is complete only when its bundle and approval are current, final HTML/image gates pass,
 WordPress readback matches, NEW remains draft, AUDIT has a backup, and any configured tracker is read
 back successfully. A local dry-run is not external completion.
+
+Pilot completion and production readiness are separate: a successful pilot becomes `batch-ready`
+only after certification. A later profile/schema change invalidates the batch manifest and requires
+reconfirmation or another pilot as appropriate.
 
 ## 6. Self-test
 

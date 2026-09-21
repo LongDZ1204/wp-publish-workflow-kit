@@ -109,7 +109,10 @@ def build_scan(
             "endpoint": rest_base,
             "post_type": post_type,
             "discovery_status": "available" if post_type else "not_exposed",
+            "status": "unconfirmed",
             "ready": False,
+            "pilot_allowed": False,
+            "batch_ready": False,
             "body_h1_count": None,
             "html_policy": html_policy,
             "required_fields": ["title", "content", "slug"],
@@ -146,12 +149,11 @@ def proposed_context(site_key: str, scan: dict) -> dict:
         "version": 2,
         "site_key": site_key,
         "tracker": {"type": "none"},
-        "pilot_allowed": False,
         "content_profiles": scan["profiles"],
         "timezone": "UTC",
         "confirmation": {
             "status": "required",
-            "note": "Confirm fields, H1 ownership, HTML policy, SEO adapter and permissions per content type.",
+            "note": "Confirm only the content type requested by the user; pilot it before batch use.",
         },
     }
 

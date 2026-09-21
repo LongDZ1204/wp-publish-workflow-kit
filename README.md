@@ -46,15 +46,17 @@ https://github.com/LongDZ1204/wp-publish-workflow-kit
 
 Setup project cho [website/domain]. Chỉ scaffold và chạy site scan read-only; chưa ghi WordPress.
 Credential dùng user riêng, lưu trong .env.wp-publish và không nhận password qua chat.
-Sau scan, hãy đề xuất rồi hỏi tôi xác nhận profile blog/service-page/product: endpoint, field bắt buộc,
-H1 ownership, HTML policy, SEO meta, ảnh và quyền còn thiếu. Google Sheet để type=none nếu tôi chưa dùng.
+Sau scan, chỉ xác nhận context chung. Khi tôi yêu cầu loại nội dung nào, hãy xác nhận profile loại đó
+ngay lúc cần, chạy một draft pilot, rồi chỉ bật batch sau REST readback và rendered QA đạt.
+Google Sheet để type=none nếu tôi chưa dùng.
 Kết thúc bằng READY FOR PILOT hoặc danh sách chính xác phần còn thiếu.
 ```
 
 Setup copies the visible `templates/project-skeleton/` to `projects/<client>/`, then the read-only
 scan writes a proposed profile under `projects/<client>/scans/`. Runtime projects are gitignored so
-client content and evidence are never packaged by accident. Nothing is enabled until the user
-confirms the relevant content type. See [the beginner guide](docs/huong-dan-nguoi-moi.md) and
+client content and evidence are never packaged by accident. Content profiles stay unconfirmed until
+requested; each becomes batch-ready only after its own verified pilot. See
+[the beginner guide](docs/huong-dan-nguoi-moi.md) and
 [the maintainer setup](docs/setup.md).
 
 ## Optional Google Sheet tracking

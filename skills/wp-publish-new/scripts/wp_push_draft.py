@@ -31,6 +31,9 @@ def load_module(name: str, path: Path):
 BUNDLE_LIB = load_module("wp_bundle_local", Path(__file__).with_name("wp_bundle.py"))
 WP_LIB = load_module("wp_rest_lib", ROOT / "skills" / "wp-rest-publish" / "scripts" / "wp_lib.py")
 GATE_LIB = load_module("wp_gate_local", Path(__file__).with_name("wp_gate.py"))
+PROFILE_LIB = load_module(
+    "wp_profile_status_local", ROOT / "workflows" / "wp-publish" / "scripts" / "wp_profile_status.py",
+)
 
 
 def atomic_json(path: Path, value: dict) -> None:
@@ -108,6 +111,35 @@ def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def select_write_profile(publish_context: dict, content_type: str, pilot: bool) -> dict:
+    if publish_context.get("version") != 2:
+        profile = dict(publish_context)
+        if profile.get("ready") is not True and not (
+            pilot and profile.get("pilot_allowed") is True
+        ):
+            raise ValueError("BRAND-MISSING: publish context is not ready")
+        return profile
+
+    source_profile = (publish_context.get("content_profiles") or {}).get(content_type)
+    if not isinstance(source_profile, dict):
+        raise ValueError(f"BRAND-MISSING: content profile {content_type}")
+    profile = dict(source_profile)
+    pilot_allowed = (
+        profile.get("pilot_allowed") is True or publish_context.get("pilot_allowed") is True
+    )
+    profile["pilot_allowed"] = pilot_allowed
+    if pilot:
+        if profile.get("status") != "pilot-ready" or not pilot_allowed:
+            raise ValueError("BRAND-MISSING: content profile is not pilot-ready")
+    elif not (
+        profile.get("status") == "batch-ready"
+        and profile.get("ready") is True
+        and profile.get("batch_ready") is True
+    ):
+        raise ValueError("BRAND-MISSING: content profile is not batch-ready")
+    return profile
+
+
 def build_payload(request: dict, final_html: str, media: dict, profile: dict | None = None) -> dict:
     payload: dict = {
         "status": "draft",
@@ -170,18 +202,7 @@ def run(args: argparse.Namespace) -> int:
         raise ValueError("BRAND-MISSING: --profile")
     publish_context = read_json(Path(args.profile))
     content_type = request.get("content_type", "blog")
-    if publish_context.get("version") == 2:
-        profile = (publish_context.get("content_profiles") or {}).get(content_type)
-        if not profile:
-            raise ValueError(f"BRAND-MISSING: content profile {content_type}")
-        pilot_allowed = publish_context.get("pilot_allowed") is True
-        profile = dict(profile)
-        profile["pilot_allowed"] = pilot_allowed
-    else:
-        profile = publish_context
-        pilot_allowed = profile.get("pilot_allowed") is True
-    if profile.get("ready") is not True and not (args.pilot and pilot_allowed):
-        raise ValueError("BRAND-MISSING: publish context is not ready")
+    profile = select_write_profile(publish_context, content_type, args.pilot)
     endpoint = str(profile.get("endpoint") or "posts").strip("/")
     state_path = bundle / "run-state.json"
     request_job_id = request.get("job_id") or (f"sheet:{request['row_id']}" if request.get("row_id") else None)
@@ -241,6 +262,9 @@ def run(args: argparse.Namespace) -> int:
         raise ValueError("VERIFY-DIFF: WordPress draft readback differs")
     state["verified"] = True
     state["wp_status"] = "draft"
+    state["pilot"] = bool(args.pilot)
+    state["content_type"] = content_type
+    state["profile_hash"] = PROFILE_LIB.profile_hash(profile)
     atomic_json(state_path, state)
     print(f"OK post_id={state['post_id']} status=draft approval_hash={current_hash}")
     return 0
