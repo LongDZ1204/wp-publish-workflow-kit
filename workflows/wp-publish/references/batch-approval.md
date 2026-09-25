@@ -20,3 +20,6 @@ batch. Any changed bundle fails verification and is not authorized.
 
 Execution and readback remain per job. A failed job becomes STOPPED with its own evidence; it does not
 silently change or retry another job. Report the final counts and exact failed job IDs.
+For AUDIT jobs, the batch verifies the current audit gate before manifest creation/approval and
+binds `audit-plan.json` plus `audit-gate-report.json` into that job's approval. A Sheet row never
+replaces this per-bundle evidence.

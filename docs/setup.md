@@ -138,7 +138,9 @@ set of prepared jobs; they do not ask again article by article.
 ## 7. Enable Google Sheets later (optional)
 
 Follow [google-sheet-template.md](google-sheet-template.md), then change the project tracker to
-`google_sheet`. The Sheet adapter validates a row and emits the same job contract. A tracker-enabled
+`google_sheet` with the spreadsheet ID and tab name. Give the running agent an authorized Google
+Sheets connector and test read plus writeback on one row; the kit does not contain a standalone
+Sheets API client. The Sheet adapter validates a row and emits the same job contract. A tracker-enabled
 run is complete only after Sheet writeback and readback; a tracker-free run completes after WordPress
 readback.
 

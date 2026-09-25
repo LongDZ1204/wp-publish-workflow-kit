@@ -3,6 +3,9 @@
 Sheet is an optional input adapter and operational tracker. Core publishing works with
 `tracker.type=none`. When enabled, the row is normalized to the v2 job contract and the workflow must
 complete writeback/readback by immutable Row ID.
+The local scripts validate and verify data; an authorized Sheets connector performs the actual
+read/write. Project tracker configuration identifies the spreadsheet and tab. Resolve exactly one
+row per Row ID before any update; duplicates or a missing row stop the run.
 
 ## Visible columns
 

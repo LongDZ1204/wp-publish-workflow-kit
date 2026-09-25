@@ -256,7 +256,9 @@ và [Yoast REST API](https://developer.yoast.com/customization/apis/rest-api/).
 ## Bước 5 — Chuẩn bị Google Sheet (tùy chọn)
 
 Nếu chưa cần Sheet, bỏ qua bước này và giữ `tracker.type=none`. Khi cần quản lý hàng loạt, dùng 11
-cột trong [Google Sheet template](google-sheet-template.md); workflow tự cập nhật các cột theo dõi.
+cột trong [Google Sheet template](google-sheet-template.md). Agent cần connector Google Sheets có
+quyền đọc/ghi; bộ kit chuẩn bị bản cập nhật và kiểm tra dòng sau khi connector ghi, không tự kết nối
+Google Sheets chỉ bằng file CSV mẫu.
 
 Hai dropdown cần có sẵn:
 
