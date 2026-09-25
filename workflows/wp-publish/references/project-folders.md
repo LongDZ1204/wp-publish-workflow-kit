@@ -11,7 +11,6 @@ projects/<client>/
 ├── context.md                    # brand/business truth; never overwritten
 ├── publish-context.md            # human site decisions
 ├── publish-context.json          # v2 machine profiles
-├── wp-credentials.env             # user-filled, ignored WordPress credential file
 ├── scans/<timestamp>/            # immutable read-only scan + proposed profile
 └── content/
     ├── blog/<slug>/
@@ -36,10 +35,10 @@ for timestamped pre-update WordPress HTML. The scripts accept explicit paths, so
 pass these locations. A new attempt gets a new `run-id`; never reuse a bundle for another job.
 
 Keep content, images and evidence with their project and content type. Shared skills, workflows and
-tools remain at repository level. The user copies `templates/wp-publish.env.example` into the
-matching project as `wp-credentials.env`, fills the three values and tells the agent to check.
+tools remain at repository level. The user copies `templates/wp-publish.env.example` once to the
+kit root as `wp-credentials.env`, adds one prefixed WordPress block per site and tells the agent to check.
 Before reading it, the agent sets mode `0600`; the file is parsed directly and never sourced.
-The old shared root `.env.wp-publish` remains a compatibility fallback.
+The old per-project files and `.env.wp-publish` remain compatibility fallbacks.
 
 Scaffolding is non-destructive. A legacy `knowledge/publish-context.json` is reported and preserved;
 it is not silently migrated or overwritten.

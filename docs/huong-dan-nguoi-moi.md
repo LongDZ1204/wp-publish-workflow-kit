@@ -23,7 +23,7 @@ Sau khi kết nối, chạy site scan read-only và chỉ xác nhận context ch
 Khi tôi yêu cầu blog/service-page/product, chỉ hỏi profile của đúng loại đó ngay lúc cần.
 Chạy một draft pilot; chỉ bật đăng hàng loạt cho loại đó sau REST readback và rendered QA đạt.
 Google Sheet là tùy chọn; để tracker.type=none nếu tôi chưa dùng.
-Application Password tôi tự điền vào projects/<client>/wp-credentials.env theo template ở Bước 3;
+Application Password tôi tự điền vào wp-credentials.env ở root theo template ở Bước 3;
 bạn không nhận password qua chat. Sau khi tôi báo đã lưu, hãy kiểm tra kết nối read-only.
 Khi hoàn tất, báo rõ READY FOR PILOT hoặc danh sách phần còn thiếu.
 ```
@@ -93,25 +93,26 @@ Làm lần lượt:
 
 ## Bước 3 — Lưu Application Password vào file bảo mật
 
-Mỗi dự án có **một file riêng** trong `projects/<ten-du-an>/`. Sau khi AI tạo folder dự án:
+Toàn bộ kit dùng **một file chung** `wp-credentials.env` ở root. Sau khi AI tạo folder dự án:
 
 1. Mở `templates/`, nhân bản `wp-publish.env.example` (trên Mac: **Command–D**).
-2. Chuyển bản sao vào `projects/<ten-du-an>/` và đổi tên thành `wp-credentials.env`.
-3. Mở bản sao bằng trình soạn thảo văn bản, thay **ba giá trị** và lưu:
+2. Chuyển bản sao ra folder gốc của kit và đổi tên thành `wp-credentials.env`. Chỉ làm bước này một lần; nếu file đã có, mở file đó.
+3. Mở file bằng trình soạn thảo văn bản, thay **ba giá trị** cho site và lưu. Tên site dùng chữ in hoa, dấu gạch ngang đổi thành gạch dưới:
 
 ```dotenv
-WP_URL="https://domain.com"
-WP_USER="wp-publish"
-WP_APP_PASS="xxxx xxxx xxxx xxxx xxxx xxxx"
+WP_TEN_DU_AN_URL="https://domain.com"
+WP_TEN_DU_AN_USER="wp-publish"
+WP_TEN_DU_AN_APP_PASS="xxxx xxxx xxxx xxxx xxxx xxxx"
 ```
 
 4. Nhắn AI: **"Tôi đã điền key cho `<ten-du-an>`, kiểm tra giúp tôi."** AI tự đặt quyền file
-   `0600`, kiểm tra WordPress bằng các lệnh chỉ đọc và báo kết quả. Không cần tự gõ lệnh hoặc sửa
-   tên biến khi thêm dự án khác.
+   `0600`, kiểm tra WordPress bằng các lệnh chỉ đọc và báo kết quả. Khi thêm dự án khác, thêm ba dòng
+   mới với prefix mới vào **cùng file**; không nhân bản file nữa.
 
-File trong `projects/` được Git bỏ qua; file mẫu trong `templates/` không chứa key thật và không được
-sửa. Nếu dự án đã có `wp-credentials.env`, mở file đó để cập nhật, không chép đè. Cách lưu chung
-trong `.env.wp-publish` ở root vẫn hoạt động cho các bản cài trước.
+File `wp-credentials.env` ở root được Git bỏ qua; file mẫu trong `templates/` không chứa key thật và
+không được sửa. File theo project và `.env.wp-publish` vẫn hoạt động cho bản cài trước. Có thể dán
+toàn bộ JSON service account vào trường `GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON` trong file chung; chỉ
+lưu key ở đó chưa tự kết nối Google Sheet, agent cần cấu hình connector tương ứng.
 
 Không dán mật khẩu vào chat, Google Sheet, Google Doc hay file nào khác.
 
@@ -371,12 +372,12 @@ thu-muc-lam-viec/
     ├── docs/ · snippets/ · tools/
     │
     │  PHẦN SINH THÊM (dữ liệu riêng, .gitignore chặn khỏi Git)
+    ├── wp-credentials.env              ← một file key chung, không đưa lên Git
     └── projects/
         └── ten-client/                ← script sinh từ project-skeleton khi setup
             ├── context.md                        ← brand fact của client
             ├── publish-context.md                ← ghi chú quyết định cách đăng
             ├── publish-context.json              ← profile blog/service/product
-            ├── wp-credentials.env               ← bản sao template, key của riêng client
             ├── scans/                            ← kết quả scan read-only + đề xuất
             └── content/                          ← tách blog/service-page/product
                 └── blog/<slug>/                   ← mỗi bài có một folder riêng
@@ -408,8 +409,8 @@ nếu tải hoặc thêm ảnh, đặt file gốc trong `assets/original/<run-id
 vì vậy phải backup riêng folder này; các bản HTML trong `backups/` không tự thay thế backup database
 hoặc media WordPress.
 
-Muốn chuyển máy hoặc backup: lưu riêng `projects/` nhưng loại mọi `wp-credentials.env` khỏi file ZIP;
-không xoá credential đang dùng trên máy. Git không giữ dữ liệu trong `projects/`.
+Muốn chuyển máy hoặc backup: lưu riêng `projects/`; chuyển `wp-credentials.env` bằng kênh bảo mật,
+không cho file này vào ZIP chia sẻ công khai. Git không giữ dữ liệu trong `projects/` hoặc file key chung.
 
 ## Quy tắc an toàn cần nhớ
 

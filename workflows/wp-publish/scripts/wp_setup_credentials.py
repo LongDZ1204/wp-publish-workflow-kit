@@ -232,7 +232,7 @@ def main() -> int:
     parser.add_argument("--site-key")
     parser.add_argument("--url")
     parser.add_argument("--user")
-    parser.add_argument("--output", default=".env.wp-publish")
+    parser.add_argument("--output", default=str(ROOT / "wp-credentials.env"))
     parser.add_argument(
         "--migrate-legacy", nargs="?", const="CLAUDE.local.md",
         help="Migrate all legacy Markdown credential blocks; the source file is retained",

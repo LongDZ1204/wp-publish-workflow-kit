@@ -24,21 +24,24 @@ remain at repository level.
 
 ## 3. Configure WordPress credentials
 
-Use a dedicated WordPress account. The user copies the visible template to the project folder,
-changes the three example values, saves it, then says "Tôi đã điền key cho example-client, kiểm tra".
+Use a dedicated WordPress account. The user copies the visible template once to the kit root,
+changes the example block values, saves it, then says "Tôi đã điền key cho example-client, kiểm tra".
 Do not ask for the Application Password in chat or read it into an agent response.
 
 ```bash
-cp templates/wp-publish.env.example projects/example-client/wp-credentials.env
+cp templates/wp-publish.env.example wp-credentials.env
 ```
 
-The file uses the same names for every project: `WP_URL`, `WP_USER`, `WP_APP_PASS`. It belongs in
-`projects/<client>/`, which Git ignores; never edit the original template. After the user reports
-completion, the agent runs `chmod 600 projects/example-client/wp-credentials.env`, then the
+Use one block per site: `WP_EXAMPLE_CLIENT_URL`, `WP_EXAMPLE_CLIENT_USER`, and
+`WP_EXAMPLE_CLIENT_APP_PASS`. For another project, append another prefixed block in the same root
+file. Git ignores this file; never edit the original template. After the user reports completion,
+the agent runs `chmod 600 wp-credentials.env`, then the
 read-only site scan below. The scan stops if the WordPress identity check fails. Never put the
 password in chat, project context, job, Sheet or command argument.
 
-Existing installs may keep using the shared root `.env.wp-publish`. The masked-input helper remains
+The same root file can hold `GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON` if a Sheets adapter uses it;
+this kit does not include a Sheets network client. Existing installs may keep using per-project
+files or `.env.wp-publish`. The masked-input helper remains
 available for operators who prefer it, and old `CLAUDE.local.md` files can be migrated with:
 
 ```bash

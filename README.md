@@ -10,8 +10,9 @@ It supports two routes:
 - `AUDIT`: snapshot and back up one existing item, apply an explicitly approved `MINIMAL_DIFF`
   or `REBUILD`, then read back the unchanged post ID and inspect the rendered page.
 
-Each project's WordPress credential file, context, content, images, scans and run data stay in its
-ignored project folder. Blog, service-page and product profiles are confirmed independently.
+One ignored root `wp-credentials.env` holds credentials for all sites and an optional Google Sheets
+service-account JSON. Project context, content, images, scans and run data stay in each ignored
+project folder. Blog, service-page and product profiles are confirmed independently.
 
 ## Repository layout
 
@@ -25,7 +26,7 @@ skills/strong-to-b/             Shared strong-to-b skill
 tools/strong-to-b/              Deterministic HTML engine
 workflows/wp-publish/           Contracts, discovery, state machine and tests
 templates/project-skeleton/     Visible per-client folder template
-templates/wp-publish.env.example Copy-and-fill credential template for one project
+templates/wp-publish.env.example Copy-once credential template for all projects
 docs/                           Setup and optional Sheet documentation
 ```
 
@@ -33,7 +34,7 @@ docs/                           Setup and optional Sheet documentation
 
 - Python 3.10+
 - A dedicated WordPress account with the exact capabilities reported by the read-only scan
-- An Application Password in `projects/<client>/wp-credentials.env` with file mode `0600`
+- An Application Password in root `wp-credentials.env` with file mode `0600`
 - Content plus any referenced images; the initial adapters are Markdown, HTML and Google Doc export
 - `Pillow`, `certifi`, and `beautifulsoup4`; `pytest` for development tests
 
@@ -49,8 +50,8 @@ Hãy cài WP Publish Workflow Kit từ:
 https://github.com/LongDZ1204/wp-publish-workflow-kit
 
 Setup project cho [website/domain]. Chỉ scaffold trước; chưa ghi WordPress.
-Tôi sẽ copy templates/wp-publish.env.example vào projects/<client>/wp-credentials.env,
-tự điền WordPress Application Password rồi báo bạn kiểm tra. Không nhận password qua chat.
+Tôi sẽ copy templates/wp-publish.env.example thành wp-credentials.env ở root một lần,
+thêm khối key WordPress cho từng project rồi báo bạn kiểm tra. Không nhận password qua chat.
 Khi tôi báo đã điền xong, đặt quyền file 0600 và chạy site scan read-only.
 Sau scan, chỉ xác nhận context chung. Khi tôi yêu cầu loại nội dung nào, hãy xác nhận profile loại đó
 ngay lúc cần, chạy một draft pilot, rồi chỉ bật batch sau REST readback và rendered QA đạt.

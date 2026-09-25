@@ -175,6 +175,9 @@ def main() -> int:
         print("STOP BRAND-MISSING: create and approve project context.md first")
         return 2
     try:
+        shared_file = WP_LIB.KIT_ROOT / "wp-credentials.env"
+        if shared_file.is_file():
+            WP_LIB.google_service_account_from_env_text(WP_LIB._read_env_file(shared_file))
         base_url, user, app_pass = WP_LIB.load_credential(args.site_key)
         scan = build_scan(base_url, user, app_pass)
         output = project / "scans" / safe_stamp(scan["scanned_at"])

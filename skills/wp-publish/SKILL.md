@@ -38,13 +38,13 @@ For a bulk request, also read `../../workflows/wp-publish/references/batch-appro
 gate every job, show one exact batch manifest/hash, and ask once; each job still executes and verifies
 independently. Batch creation is allowed only for content-type profiles certified `batch-ready`.
 
-For a new project, scaffold first. Ask the user to copy `templates/wp-publish.env.example` to
-`projects/<client>/wp-credentials.env`, fill the three values locally and report when done. Then
+For a new project, scaffold first. Ask the user to copy `templates/wp-publish.env.example` once to
+root `wp-credentials.env`, append/fill the site's three prefixed values locally and report when done. Then
 set mode `0600` and scan read-only; never request or print the password in chat. Confirm project-wide
 context only. Confirm a
 content-type profile just in time when the user first requests that type; after one approved draft
 pilot passes REST readback and rendered QA, certify only that profile for batch use. Credentials stay
-in the ignored project file; the old root `.env.wp-publish` is a compatibility fallback. Do not copy
+in the ignored root file; per-project files and `.env.wp-publish` are compatibility fallbacks. Do not copy
 secrets into jobs, logs or Git.
 For each job, create its item workspace with `wp_scaffold_item.py` and keep the locked source,
 images, backup and bundle under the paths in `workflows/wp-publish/references/project-folders.md`.
