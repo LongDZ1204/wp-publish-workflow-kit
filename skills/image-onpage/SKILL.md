@@ -28,7 +28,7 @@ JSON gồm `profile` và `images`. Mỗi image cần `asset_id`, `alt` (trừ de
   "images": [
     {
       "asset_id": "hero",
-      "source": "projects/client/content/blog/example/assets/hero.jpg",
+      "source": "projects/client/content/blog/example/assets/original/2026-09-25-new-01/hero.jpg",
       "filename": "editorial-review-workflow.jpg",
       "heading": "Editorial review workflow",
       "alt": "Editor reviewing article structure before WordPress publication",
@@ -46,8 +46,8 @@ Alt/caption là quyết định semantic: phải xem ảnh thật, heading và b
 ```bash
 python3 skills/image-onpage/scripts/image_prepare.py \
   --mode prepare-new --request image-request.json \
-  --output-dir projects/<client>/content/<content-type>/<slug>/assets/prepared \
-  --manifest projects/<client>/content/<content-type>/<slug>/bundle/image-manifest.json
+  --output-dir projects/<client>/content/<content-type>/<slug>/assets/prepared/<run-id> \
+  --manifest projects/<client>/content/<content-type>/<slug>/runs/<run-id>/bundle/image-manifest.json
 ```
 
 Script:

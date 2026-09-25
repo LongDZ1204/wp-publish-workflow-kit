@@ -39,3 +39,5 @@ For a new project, scaffold and scan read-only, then confirm project-wide contex
 content-type profile just in time when the user first requests that type; after one approved draft
 pilot passes REST readback and rendered QA, certify only that profile for batch use. Credentials stay
 in one ignored root `.env.wp-publish`; do not copy secrets into project folders, jobs, logs or Git.
+For each job, create its item workspace with `wp_scaffold_item.py` and keep the locked source,
+images, backup and bundle under the paths in `workflows/wp-publish/references/project-folders.md`.

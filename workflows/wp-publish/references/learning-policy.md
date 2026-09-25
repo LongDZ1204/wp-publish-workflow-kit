@@ -5,7 +5,8 @@ Learning là recommendation loop, không phải self-modifying production.
 ## Storage
 
 - Sheet: chỉ status/error hiện hành.
-- `run-state.json`: một record hiện hành per article, cập nhật tại chỗ.
+- `runs/<run-id>/bundle/run-state.json`: một record cho mỗi lần chạy, cập nhật tại chỗ; lần chạy
+  sau dùng `run-id` mới và giữ nguyên lịch sử cũ.
 - `learning-index.json`: một record per stable `learning_key`, aggregate counter.
 - `learnings.md`: chỉ luật đã được operator duyệt; không chứa raw log.
 - Không tạo `learnings-archive.md`; Git history là archive.

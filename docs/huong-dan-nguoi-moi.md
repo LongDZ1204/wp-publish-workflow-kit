@@ -384,15 +384,37 @@ thu-muc-lam-viec/
             ├── publish-context.json              ← profile blog/service/product
             ├── scans/                            ← kết quả scan read-only + đề xuất
             └── content/                          ← tách blog/service-page/product
+                └── blog/<slug>/                   ← mỗi bài có một folder riêng
+                    ├── assets/original/<run-id>/  ← ảnh gốc tải về/được cung cấp
+                    ├── assets/prepared/<run-id>/  ← ảnh đã chuẩn bị để upload
+                    ├── backups/                  ← HTML WordPress trước mỗi lần AUDIT
+                    └── runs/<run-id>/
+                        ├── intake/               ← snapshot content nguồn
+                        ├── snapshot/             ← HTML + metadata WP trước AUDIT
+                        ├── work/                 ← ZIP Doc, mapping, bản nháp chuyển đổi
+                        └── bundle/               ← HTML duyệt, hash, trạng thái, readback
 ```
 
-Tạo toàn bộ cấu trúc trên bằng một lệnh:
+Tạo bộ khung client bằng một lệnh:
 
 ```bash
 python3 workflows/wp-publish/scripts/wp_scaffold_project.py --client ten-client
 ```
 
-Muốn chuyển máy hoặc backup: zip cả thư mục, nhưng **xoá `.env.wp-publish` trước** (chỉ giữ ở máy).
+Lệnh này chỉ tạo bộ khung client. Khi có bài cụ thể, tạo một lần chạy riêng:
+
+```bash
+python3 workflows/wp-publish/scripts/wp_scaffold_item.py \
+  --client ten-client --content-type blog --slug ten-bai --run-id 2026-09-25-audit-01
+```
+
+Mỗi lần cập nhật lại cùng bài dùng `run-id` mới. Ảnh WordPress được giữ URL thì không cần tải về;
+nếu tải hoặc thêm ảnh, đặt file gốc trong `assets/original/<run-id>/`. Git bỏ qua toàn bộ `projects/`,
+vì vậy phải backup riêng folder này; các bản HTML trong `backups/` không tự thay thế backup database
+hoặc media WordPress.
+
+Muốn chuyển máy hoặc backup: lưu riêng `projects/` và loại `.env.wp-publish` khỏi file ZIP; không
+xoá file credential đang dùng trên máy. Git không giữ dữ liệu trong `projects/`.
 
 ## Quy tắc an toàn cần nhớ
 

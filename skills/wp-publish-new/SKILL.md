@@ -25,14 +25,15 @@ can never publish the post or enable another content type.
 
 ## Source and draft storage
 
-- Google Doc remains the editorial source. Pull it once with the Google Docs/Drive connector, export
-  the current text to a temporary/local Markdown file, then run `wp_bundle.py lock`. The bundle keeps
-  one `source.snapshot.md` plus its checksum; it does not keep successive draft versions.
-- A local Markdown source is not copied. Its absolute path and checksum are stored in
-  `source-lock.json`.
-- Images live with the item under `projects/<client>/content/<content-type>/<slug>/assets/`; the bundle only stores mappings.
+- Google Doc remains the editorial source. Export it to `runs/<run-id>/work/`, snapshot the converted
+  content to `runs/<run-id>/intake/`, then lock that file. The bundle keeps a Google Doc
+  `source.snapshot.html|md` and its checksum; it does not keep successive draft versions.
+- A local Markdown/HTML source is copied by `wp_intake.py` to the run's `intake/`. Lock that copy;
+  `source-lock.json` stores its path and checksum. Changing it invalidates approval.
+- Supplied/ZIP images go in `assets/original/<run-id>/`; prepared images go in
+  `assets/prepared/<run-id>/`. The bundle stores only mappings and evidence.
 - The publish-ready artifact lives in
-  `projects/<client>/content/<content-type>/<slug>/bundle/`.
+  `projects/<client>/content/<content-type>/<slug>/runs/<run-id>/bundle/`.
 
 ## Prepare and approve
 
@@ -40,22 +41,26 @@ Với Google Doc, export `application/zip` (HTML + ảnh) rồi chuẩn hóa tr�
 
 ```bash
 python3 skills/wp-publish-new/scripts/wp_doc_export.py \
-  --zip doc-export.zip --mapping doc-image-map.json \
-  --html-out content.rendered.html --image-request-out image-request.json
+  --zip '<run-dir>/work/doc-export.zip' --mapping '<run-dir>/work/doc-image-map.json' \
+  --html-out '<run-dir>/work/content.rendered.html' \
+  --image-request-out '<run-dir>/work/image-request.json'
 ```
 
 Mapping phải cấp alt/caption/filename rõ ràng; Google Doc không phải nguồn alt. Source phải có đúng một
 H1 (Google Doc dùng Heading 1). Script loại style rác của Docs, chỉ bỏ paragraph mang style `title` của
 Docs nếu có, giữ H1 cùng heading/list/link/table và thay ảnh bằng `asset://<asset_id>`.
+Mỗi `source_output` trong mapping trỏ tới `<item>/assets/original/<run-id>/<filename>`. Chạy
+`wp_intake.py` trên `content.rendered.html` vào `<run-dir>/intake/` trước khi khóa bundle.
 
 ```bash
 python3 skills/wp-publish-new/scripts/wp_bundle.py lock \
-  --request row.normalized.json --source article.md --source-type google_doc \
+  --request '<run-dir>/work/row.normalized.json' \
+  --source '<run-dir>/intake/content.snapshot.html' --source-type google_doc \
   --source-ref '<google-doc-url>' --source-revision '<Docs revision/modifiedTime>' \
   --bundle '<bundle-dir>'
 
 python3 workflows/wp-publish/scripts/wp_strong.py \
-  --input content.rendered.html --output '<bundle-dir>/content.prepared.html' \
+  --input '<run-dir>/work/content.rendered.html' --output '<bundle-dir>/content.prepared.html' \
   --report '<bundle-dir>/transform-report.json'
 
 python3 skills/wp-publish-new/scripts/wp_gate.py \
@@ -95,7 +100,8 @@ python3 skills/wp-publish-new/scripts/wp_push_draft.py \
 
 Append `--pilot` only for the explicitly enabled one-time pilot described above.
 
-After a pilot, inspect the authenticated draft render and write `render-report.json` with `ok=true`,
+After a pilot, inspect the authenticated draft render and write `<bundle-dir>/render-report.json`
+with `ok=true`,
 the exact `post_id`, and true checks for `content`, `images`, `heading`, `links` and `seo_meta`. Then
 run `workflows/wp-publish/scripts/wp_profile_status.py certify`; only this transition enables batch.
 
