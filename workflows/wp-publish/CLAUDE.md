@@ -15,7 +15,7 @@ Components remain shared across projects:
 - `workflows/wp-publish/scripts/wp_scaffold_item.py` — one non-destructive item workspace per run.
 - `workflows/wp-publish/scripts/wp_site_scan.py` — read-only site discovery.
 - `workflows/wp-publish/scripts/wp_profile_status.py` — JIT confirmation and pilot certification.
-- `workflows/wp-publish/scripts/wp_setup_credentials.py` — optional masked credential setup.
+- `workflows/wp-publish/scripts/wp_setup_credentials.py` — optional legacy/shared-file setup.
 - `workflows/wp-publish/scripts/wp_learn.py` — records compact STOP/verify evidence for review.
 - `workflows/wp-publish/scripts/wp_batch_approval.py` — one approval for an exact gated batch.
 
@@ -43,9 +43,12 @@ Before a run, read [job-contract.md](references/job-contract.md),
 ## 3. First connection and just-in-time content profiles
 
 1. Scaffold the project from `templates/project-skeleton/` with `scripts/wp_scaffold_project.py`.
-2. Store all site credential variables in the root gitignored `.env.wp-publish` with mode `0600`.
-   The parser reads this file directly; never source it into the shell or put secrets in AI context.
-3. Run `scripts/wp_site_scan.py`; it may use only GET and OPTIONS.
+2. Point the user to `templates/wp-publish.env.example`. They copy it to
+   `projects/<client>/wp-credentials.env`, fill `WP_URL`, `WP_USER`, `WP_APP_PASS` locally, and tell
+   you when it is ready. Do not ask them to paste the password in chat. When they report completion,
+   set file mode `0600` without printing its contents.
+3. Run `scripts/wp_site_scan.py` with `site-key=<client>`; it may use only GET and OPTIONS. Check
+   the authenticated identity and capabilities before reporting that credentials work.
 4. Confirm only project-wide context during setup. Keep every content profile `unconfirmed`.
 5. When the user first requests a content type, present only that proposed profile and its exact
    missing capabilities. Confirm endpoint, fields, H1 ownership, HTML policy, SEO meta and image

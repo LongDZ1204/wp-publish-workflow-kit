@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Shared WordPress REST helpers with explicitly loaded local credentials.
 
-The preferred file is the gitignored `.env.wp-publish`. It is parsed directly and
-is never sourced into the shell. `CLAUDE.local.md` remains a read-only legacy fallback.
+The preferred file is `projects/<site-key>/wp-credentials.env` in the ignored
+project directory. The shared root `.env.wp-publish` and `CLAUDE.local.md` remain
+read-only legacy fallbacks. Credential files are parsed, never sourced.
 """
 import os
 import re
@@ -13,6 +14,9 @@ import ssl
 import base64
 import urllib.request
 import urllib.error
+
+
+PROJECTS_ROOT = Path(__file__).resolve().parents[3] / "projects"
 
 
 def _ssl_ctx():
@@ -80,6 +84,18 @@ def credential_from_env_text(site_key, text):
     return None
 
 
+def credential_from_project_text(text):
+    """Parse one visible, per-project credential file with fixed field names."""
+    values = parse_env_text(text)
+    fields = (values.get("WP_URL"), values.get("WP_USER"), values.get("WP_APP_PASS"))
+    if not all(fields):
+        raise ValueError("incomplete project credential: WP_URL, WP_USER and WP_APP_PASS are required")
+    url, user, app = fields
+    if not url.startswith("https://"):
+        raise ValueError("project credential WP_URL must use HTTPS")
+    return url.rstrip("/"), user, app
+
+
 def credential_from_legacy_text(site_key, text):
     key = str(site_key).lower()
     blocks = re.split(r"(?m)^#{2,4}\s+", text)
@@ -105,7 +121,28 @@ def _read_env_file(path):
 
 
 def load_credential(site_key, credential_path=None, claude_local_path=None):
-    """Return (base_url, user, app_pass), preferring process env then the env file."""
+    """Return (base_url, user, app_pass), preferring the current project."""
+    explicit = credential_path or claude_local_path or os.environ.get("WP_CREDENTIAL_FILE")
+    if explicit:
+        if not os.path.isfile(explicit):
+            sys.exit(f"ERR: credential file not found: {explicit}")
+        if str(explicit).lower().endswith(".md"):
+            found = credential_from_legacy_text(
+                site_key, Path(explicit).expanduser().read_text(encoding="utf-8")
+            )
+        elif Path(explicit).name == "wp-credentials.env":
+            found = credential_from_project_text(_read_env_file(explicit))
+        else:
+            found = credential_from_env_text(site_key, _read_env_file(explicit))
+        if found:
+            return found
+        sys.exit(f"ERR: credential file has no complete entry for '{site_key}': {explicit}")
+
+    if re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", str(site_key)):
+        project_file = PROJECTS_ROOT / str(site_key) / "wp-credentials.env"
+        if project_file.is_file():
+            return credential_from_project_text(_read_env_file(project_file))
+
     process_values = (
         os.environ.get("WP_URL"), os.environ.get("WP_USER"), os.environ.get("WP_APP_PASS")
     )
@@ -116,20 +153,6 @@ def load_credential(site_key, credential_path=None, claude_local_path=None):
             raise ValueError("WP_URL must use HTTPS")
         return (os.environ["WP_URL"].rstrip("/"),
                 os.environ["WP_USER"], os.environ["WP_APP_PASS"])
-
-    explicit = credential_path or claude_local_path or os.environ.get("WP_CREDENTIAL_FILE")
-    if explicit:
-        if not os.path.isfile(explicit):
-            sys.exit(f"ERR: credential file not found: {explicit}")
-        if str(explicit).lower().endswith(".md"):
-            found = credential_from_legacy_text(
-                site_key, Path(explicit).expanduser().read_text(encoding="utf-8")
-            )
-        else:
-            found = credential_from_env_text(site_key, _read_env_file(explicit))
-        if found:
-            return found
-        sys.exit(f"ERR: credential file has no complete entry for '{site_key}': {explicit}")
 
     env_paths = []
     env_paths += [".env.wp-publish", os.path.expanduser("~/.config/wp-publish/credentials.env")]
@@ -148,7 +171,7 @@ def load_credential(site_key, credential_path=None, claude_local_path=None):
             if found:
                 return found
     sys.exit(
-        f"ERR: không thấy credential cho '{site_key}'. Dùng .env.wp-publish, "
+        f"ERR: không thấy credential cho '{site_key}'. Dùng projects/{site_key}/wp-credentials.env, .env.wp-publish, "
         "WP_CREDENTIAL_FILE hoặc WP_URL/WP_USER/WP_APP_PASS."
     )
 

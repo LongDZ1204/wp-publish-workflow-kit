@@ -24,29 +24,28 @@ remain at repository level.
 
 ## 3. Configure WordPress credentials
 
-Use a dedicated account. The exact required capabilities are checked later per content type; do not
-grant Administrator merely to make setup pass.
+Use a dedicated WordPress account. The user copies the visible template to the project folder,
+changes the three example values, saves it, then says "Tôi đã điền key cho example-client, kiểm tra".
+Do not ask for the Application Password in chat or read it into an agent response.
 
 ```bash
-python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
-  --site-key example-client --url https://example.com --user wp-publish \
-  --input-mode dialog
+cp templates/wp-publish.env.example projects/example-client/wp-credentials.env
 ```
 
-The native masked dialog verifies the account and stores three site-prefixed variables in the root,
-ignored `.env.wp-publish` with mode `0600`. Multiple sites share that one file. The parser reads it
-directly; do not `source` it into the shell. Never put a password in chat, project context, job,
-Sheet or command argument.
+The file uses the same names for every project: `WP_URL`, `WP_USER`, `WP_APP_PASS`. It belongs in
+`projects/<client>/`, which Git ignores; never edit the original template. After the user reports
+completion, the agent runs `chmod 600 projects/example-client/wp-credentials.env`, then the
+read-only site scan below. The scan stops if the WordPress identity check fails. Never put the
+password in chat, project context, job, Sheet or command argument.
 
-Existing installs can migrate without deleting the legacy file:
+Existing installs may keep using the shared root `.env.wp-publish`. The masked-input helper remains
+available for operators who prefer it, and old `CLAUDE.local.md` files can be migrated with:
 
 ```bash
 python3 workflows/wp-publish/scripts/wp_setup_credentials.py --migrate-legacy
 ```
 
-After verifying the new file works, securely delete the old local file yourself. Do not revoke the
-Application Password unless you also intend to rotate it. The migration command never deletes the
-legacy file automatically.
+The migration command never deletes the legacy file automatically.
 
 ## 4. Run read-only discovery
 
