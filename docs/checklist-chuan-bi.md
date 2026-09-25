@@ -37,3 +37,12 @@
 - [ ] Rerun không tạo trùng post/media.
 - [ ] Sau pilot + rendered QA mới certify đúng loại bài thành `batch-ready`.
 - [ ] Batch manifest bị chặn nếu có loại bài chưa `batch-ready`.
+
+## AUDIT bài đã có
+
+- [ ] Quyết định editorial đã chốt `MINIMAL_DIFF` hoặc `REBUILD` cho đúng post ID/URL.
+- [ ] Có snapshot `content.raw` mới và backup có tên riêng, hash khớp metadata.
+- [ ] `audit-plan.json` ghi đúng chênh lệch cấu trúc, passage giữ nguyên, ảnh và cặp link/anchor được duyệt bỏ.
+- [ ] Gate HTML/ảnh và audit đều đạt trước khi trình hash duyệt.
+- [ ] Lệnh ghi `wp_push_audit.py` đã dry-run; post vẫn khớp `modified` và raw hash trước khi ghi.
+- [ ] REST readback khớp, rồi kiểm trang render desktop/mobile và schema nếu nội dung có ảnh hưởng.

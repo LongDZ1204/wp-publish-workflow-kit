@@ -138,7 +138,9 @@ python3 scripts/check_distribution.py
 ## Publishing boundary
 
 - `NEW` remains draft-only.
-- `AUDIT` requires a fresh WordPress snapshot and immutable backup.
+- `AUDIT` requires a selected `MINIMAL_DIFF` or `REBUILD`, fresh WordPress snapshot and uniquely
+  named backup. Follow [the AUDIT publishing flow](audit-publish-flow.md) for its mode-specific
+  gate, approval and executor.
 - Every external write requires approval for the current bundle hash.
 - A POST timeout requires GET/reconciliation; never retry blindly.
 - HTML/image transforms and WordPress readback must pass the confirmed content profile.

@@ -45,11 +45,20 @@ class SheetContractTests(unittest.TestCase):
             "Row ID": "r2", "Loại bài": "AUDIT",
             "Nguồn content": "https://docs.google.com/document/d/1/edit",
             "Slug / URL WP": "https://example.com/a/", "Bài / Title": "A",
+            "Update mode": "REBUILD",
         })
         self.assertEqual(row["target_url"], "https://example.com/a/")
         self.assertEqual(row["source_type"], "google_doc")
         self.assertEqual(row["job_id"], "sheet:r2")
         self.assertEqual(row["tracker"]["type"], "google_sheet")
+        self.assertEqual(row["update_mode"], "REBUILD")
+
+    def test_sheet_audit_may_wait_for_an_upstream_mode_decision(self):
+        row = sheet.validate({
+            "Row ID": "r2", "Loại bài": "AUDIT", "Nguồn content": "a.html",
+            "Slug / URL WP": "https://example.com/a/", "Bài / Title": "A",
+        })
+        self.assertNotIn("update_mode", row)
 
     def test_new_combined_locator_becomes_slug(self):
         row = sheet.validate({
@@ -67,6 +76,23 @@ class SheetContractTests(unittest.TestCase):
 
 
 class JobContractTests(unittest.TestCase):
+    def test_audit_rebuild_mode_is_retained(self):
+        job = job_contract.validate({
+            "job_id": "a1", "run_id": "r1", "client": "demo", "site_key": "demo",
+            "task_type": "AUDIT", "content_type": "blog", "title": "New title",
+            "post_id": 42, "update_mode": "rebuild",
+            "source": {"adapter": "local_html", "ref": "new.html"},
+        })
+        self.assertEqual(job["update_mode"], "REBUILD")
+
+    def test_audit_job_without_mode_stops(self):
+        with self.assertRaisesRegex(job_contract.ContractError, "update_mode"):
+            job_contract.validate({
+                "job_id": "a1", "run_id": "r1", "client": "demo", "site_key": "demo",
+                "task_type": "AUDIT", "title": "New title", "post_id": 42,
+                "source": {"adapter": "local_html", "ref": "new.html"},
+            })
+
     def test_tracker_free_html_job(self):
         job = job_contract.validate({
             "job_id": "job-1", "run_id": "run-1", "client": "demo", "site_key": "demo",

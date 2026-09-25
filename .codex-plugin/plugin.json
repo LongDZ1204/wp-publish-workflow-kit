@@ -1,6 +1,6 @@
 {
   "name": "wp-publish-workflow-kit",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Approval-bound WordPress publishing with flexible inputs and optional trackers.",
   "author": {
     "name": "SEO Cowork Contributors"
@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "WordPress Publish Workflow",
     "shortDescription": "Publish NEW drafts and AUDIT updates with approval and readback gates.",
-    "longDescription": "Routes Markdown, HTML, Google Doc exports and optional Google Sheet rows into safe WordPress NEW or AUDIT workflows, with project profiles, read-only discovery, approval hashes and conditional tracker readback.",
+    "longDescription": "Routes Markdown, HTML, Google Doc exports and optional Google Sheet rows into WordPress NEW drafts or approved MINIMAL_DIFF/REBUILD AUDIT updates, with project profiles, read-only discovery, approval hashes and conditional tracker readback.",
     "developerName": "SEO Cowork Contributors",
     "category": "Productivity",
     "capabilities": [

@@ -10,9 +10,11 @@ Xuất ra DIR: <slug|id>.raw.html (content.raw) + <slug|id>.meta.json (id, modif
 Nếu --backup có, copy thêm 1 bản .raw.html vào đó (timestamp do người gọi tự đặt tên trước).
 """
 import argparse
+import hashlib
 import json
 import os
 import sys
+from datetime import datetime, timezone
 from wp_lib import load_credential, wp_get, detect_format
 
 
@@ -46,17 +48,23 @@ def main():
     stub = a.id or a.slug
     raw = post["content"]["raw"]
     raw_path = os.path.join(a.out, f"{stub}.raw.html")
-    open(raw_path, "w", encoding="utf-8").write(raw)
+    with open(raw_path, "w", encoding="utf-8") as handle:
+        handle.write(raw)
     meta = {k: (post[k]["raw"] if isinstance(post.get(k), dict) and "raw" in post[k] else post.get(k))
             for k in ("id", "slug", "link", "modified", "status", "title")}
     meta["format"] = detect_format(raw)
     meta["rest_base"] = a.rest_base
-    open(os.path.join(a.out, f"{stub}.meta.json"), "w", encoding="utf-8").write(json.dumps(meta, indent=2))
-
+    meta["raw_sha256"] = hashlib.sha256(raw.encode("utf-8")).hexdigest()
     if a.backup:
         os.makedirs(a.backup, exist_ok=True)
-        bpath = os.path.join(a.backup, f"{stub}.wp-raw-backup.html")
-        open(bpath, "w", encoding="utf-8").write(raw)
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+        bpath = os.path.join(a.backup, f"{stub}.{stamp}.wp-raw-backup.html")
+        with open(bpath, "x", encoding="utf-8") as handle:
+            handle.write(raw)
+        meta["backup_path"] = os.path.abspath(bpath)
+        meta["backup_sha256"] = meta["raw_sha256"]
+    with open(os.path.join(a.out, f"{stub}.meta.json"), "w", encoding="utf-8") as handle:
+        handle.write(json.dumps(meta, indent=2))
 
     print(json.dumps({
         "id": meta["id"], "modified": meta["modified"], "status": meta["status"],

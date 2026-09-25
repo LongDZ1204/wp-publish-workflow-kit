@@ -61,6 +61,8 @@ def normalize(value: dict) -> dict:
         tracker.setdefault("row_id", row_id)
     job["tracker"] = tracker
     job.setdefault("content_type", "blog")
+    if job.get("update_mode"):
+        job["update_mode"] = str(job["update_mode"]).strip().upper().replace("-", "_")
     job["version"] = 2
     return job
 
@@ -89,6 +91,8 @@ def validate(value: dict) -> dict:
         _nonempty(job.get("target_url")) or _nonempty(job.get("post_id"))
     ):
         raise ContractError("INPUT-MISSING: target_url or post_id is required for AUDIT")
+    if job["task_type"] == "AUDIT" and job.get("update_mode") not in {"MINIMAL_DIFF", "REBUILD"}:
+        raise ContractError("INPUT-MISSING: AUDIT update_mode must be MINIMAL_DIFF or REBUILD")
     if job["tracker"]["type"] == "google_sheet" and not _nonempty(job["tracker"].get("row_id")):
         raise ContractError("INPUT-MISSING: tracker.row_id")
     return job

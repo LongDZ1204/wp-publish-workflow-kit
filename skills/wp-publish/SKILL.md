@@ -21,11 +21,14 @@ The v2 job declares NEW/AUDIT and source adapter. Google Sheets is an optional t
 prerequisite. Never infer or switch route from a slug.
 
 - `NEW` creates or resumes exactly one WordPress draft; it never publishes automatically.
-- `AUDIT` updates exactly one existing item from a fresh snapshot and immutable backup.
+- `AUDIT` updates exactly one existing item from a fresh snapshot and uniquely named backup.
+  Its approved editorial plan must declare `MINIMAL_DIFF` or `REBUILD`; read
+  `../../docs/audit-publish-flow.md` for the distinct preparation and gate requirements.
 - Every referenced image passes `image-onpage`; missing non-decorative alt text stops the run, while a
   missing caption remains empty unless the source or approved context supplies one.
 - Every prepared HTML file passes the deterministic shared `strong-to-b` engine.
-- External writes require explicit approval for the current bundle hash.
+- External writes require explicit approval for the current bundle hash. AUDIT approval also binds
+  its mode, change plan and audit gate report; `wp_push_audit.py` is dry-run by default.
 - Completion requires WordPress readback and, only when configured, tracker readback.
 
 For a bulk request, also read `../../workflows/wp-publish/references/batch-approval.md`. Prepare and
