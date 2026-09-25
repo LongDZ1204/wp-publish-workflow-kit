@@ -3,6 +3,13 @@
 Google Sheets is not required for publishing. Use this template only after setting the project
 tracker to `google_sheet`; each row is normalized into the same v2 job contract used without Sheets.
 
+The kit provides a row validator and a writeback/readback contract, not a built-in Google Sheets
+network client. The running agent needs an authorized Sheets connector. Store the spreadsheet ID
+and tab name in the project's `publish-context.json` tracker configuration, for example
+`{"type":"google_sheet","spreadsheet_id":"...","tab_name":"Blog"}`. Connectors differ by runtime;
+resolve the exact spreadsheet and tab before reading or writing rows. Never put credentials in the
+Sheet or project JSON.
+
 Use one client-specific tab with these columns:
 
 | Column | Entered by | Purpose |
@@ -29,5 +36,10 @@ Status dropdown:
 
 Use strict dropdown validation. Do not expose technical run state, approval files, post IDs or source
 revisions as separate Sheet columns; those belong in the local bundle.
+
+For NEW, creating a WordPress draft moves the row to `Chờ đăng`; it does not auto-publish on the
+planned date. Move it to `Hoàn tất` only after a human publishes and the live page is checked.
+For AUDIT, `Hoàn tất` requires the existing post to be updated, WordPress/render checks to pass,
+and the Sheet writeback to be read back by `Row ID`.
 
 A CSV header starter is available at `templates/sheet-template.csv`.

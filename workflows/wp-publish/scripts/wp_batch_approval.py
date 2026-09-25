@@ -37,6 +37,8 @@ def inspect_bundle(bundle: Path) -> dict:
     bundle = bundle.resolve()
     BUNDLE.verify_source(bundle)
     request = json.loads((bundle / "publish-request.json").read_text(encoding="utf-8"))
+    if request.get("task_type") == "AUDIT":
+        BUNDLE.verify_audit_gate(bundle)
     job_id = request.get("job_id") or (
         f"sheet:{request['row_id']}" if request.get("row_id") else None
     )
@@ -114,12 +116,13 @@ def approve_manifest(manifest_path: Path, expected_hash: str, approved_by: str) 
     verify_manifest(manifest)
     approved_at = datetime.now(timezone.utc).isoformat()
     for item in manifest["jobs"]:
-        BUNDLE.atomic_json(Path(item["bundle"]) / "approval.json", {
+        bundle = Path(item["bundle"])
+        BUNDLE.atomic_json(bundle / "approval.json", {
             "version": 1,
             "approval_hash": item["bundle_hash"],
             "approved_by": approved_by,
             "approved_at": approved_at,
-            "files": list(BUNDLE.APPROVAL_FILES),
+            "files": list(BUNDLE.approval_files(bundle)),
             "batch_id": manifest["batch_id"],
             "batch_manifest_hash": current_hash,
         })

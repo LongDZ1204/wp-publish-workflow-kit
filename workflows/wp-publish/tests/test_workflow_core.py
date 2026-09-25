@@ -247,6 +247,43 @@ class BatchApprovalTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "content profile changed"):
                 batch_approval.verify_manifest(manifest)
 
+    def test_audit_batch_approval_binds_plan_and_audit_report(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            bundle = self.make_bundle(root, "audit-job")
+            request_path = bundle / "publish-request.json"
+            request = json.loads(request_path.read_text(encoding="utf-8"))
+            request.update(task_type="AUDIT", update_mode="REBUILD", post_id=42)
+            request_path.write_text(json.dumps(request), encoding="utf-8")
+            (bundle / "audit-plan.json").write_text('{"update_mode":"REBUILD"}', encoding="utf-8")
+            (bundle / "audit-gate-report.json").write_text('{"ok":true}', encoding="utf-8")
+            context = self.make_context(root)
+            with mock.patch.object(batch_approval.BUNDLE, "verify_audit_gate") as audit_gate:
+                manifest = batch_approval.build_manifest("batch-audit", [bundle], context)
+                manifest_path = root / "batch-manifest.json"
+                batch_approval.BUNDLE.atomic_json(manifest_path, manifest)
+                batch_approval.approve_manifest(
+                    manifest_path, batch_approval.file_sha256(manifest_path), "operator",
+                )
+                self.assertGreaterEqual(audit_gate.call_count, 2)
+            approval = json.loads((bundle / "approval.json").read_text(encoding="utf-8"))
+            self.assertEqual(approval["files"], list(batch_approval.BUNDLE.approval_files(bundle)))
+            self.assertIn("audit-plan.json", approval["files"])
+            self.assertIn("audit-gate-report.json", approval["files"])
+
+    def test_audit_batch_rejects_stale_audit_gate(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            bundle = self.make_bundle(root, "audit-job")
+            request_path = bundle / "publish-request.json"
+            request = json.loads(request_path.read_text(encoding="utf-8"))
+            request.update(task_type="AUDIT", update_mode="REBUILD", post_id=42)
+            request_path.write_text(json.dumps(request), encoding="utf-8")
+            context = self.make_context(root)
+            with mock.patch.object(batch_approval.BUNDLE, "verify_audit_gate", side_effect=ValueError("SOURCE-STALE")):
+                with self.assertRaisesRegex(ValueError, "SOURCE-STALE"):
+                    batch_approval.build_manifest("batch-audit", [bundle], context)
+
 
 class ProfileStatusTests(unittest.TestCase):
     def make_context(self, root: Path) -> Path:

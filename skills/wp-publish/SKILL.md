@@ -19,6 +19,9 @@ Before every run, read:
 
 The v2 job declares NEW/AUDIT and source adapter. Google Sheets is an optional tracker/adapter, not a
 prerequisite. Never infer or switch route from a slug.
+When Sheets is enabled, use an authorized connector to read/write the configured spreadsheet and
+tab. `wp_sheet_contract.py` validates a row; `wp_sheet_io.py` prepares an allow-listed patch and
+verifies connector readback. Neither script is a Google Sheets network client.
 
 - `NEW` creates or resumes exactly one WordPress draft; it never publishes automatically.
 - `AUDIT` updates exactly one existing item from a fresh snapshot and uniquely named backup.
