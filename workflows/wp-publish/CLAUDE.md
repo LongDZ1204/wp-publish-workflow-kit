@@ -21,6 +21,7 @@ Components remain shared across projects:
 Never change route from WordPress state, write without approval for the current hash, publish a NEW
 item automatically, retry an uncertain POST blindly, request Administrator just to unblock setup, or
 overwrite a project context/profile during discovery.
+AUDIT also requires an explicit, editorially approved `update_mode`: `MINIMAL_DIFF` or `REBUILD`.
 
 ## 2. Sources of truth
 
@@ -59,11 +60,15 @@ blog pilot never enables service pages or products.
 ### P0 — Normalize and lock input
 
 - Validate with `scripts/wp_job_contract.py`.
-- If the source is a Sheet row, first use `scripts/wp_sheet_contract.py`; it emits the same job.
+- If the source is a Sheet row, first use `scripts/wp_sheet_contract.py`; merge the approved
+  editorial AUDIT mode into that normalized row, then validate the complete job with
+  `scripts/wp_job_contract.py`. The visible Sheet does not need an Update mode column.
 - Lock Markdown, HTML or a Google Doc export with `scripts/wp_intake.py`.
 - Load the matching profile. An `unconfirmed` type stops for JIT confirmation; a `pilot-ready` type
   permits only an explicit `--pilot`; normal jobs require `status=batch-ready` and `ready=true`.
 - Initialize the atomic journal with `scripts/wp_state.py`.
+- For AUDIT, preserve the selected `update_mode` in the request and run state; a missing mode stops
+  before any WordPress write. It is not inferred from the source format or post history.
 
 ### P1 — Route reconciliation (read-only)
 
@@ -72,7 +77,11 @@ draft; AUDIT must resolve exactly one existing target. Any mismatch is `ROUTE-CO
 
 ### P2 — Prepare bundle without external writes
 
-- NEW calls `wp-publish-new`; AUDIT records a fresh raw snapshot and immutable backup.
+- NEW calls `wp-publish-new`. AUDIT records a fresh raw snapshot and uniquely named backup,
+  then locks snapshot metadata and source through `wp_bundle.py lock --snapshot-meta`.
+- AUDIT `MINIMAL_DIFF` applies exact replacements to the current raw HTML. `REBUILD` prepares the
+  approved replacement body. Both require `audit-plan.json` and `wp_audit_gate.py`; the plan must
+  account for structure changes, frozen passages, and every removed image/link URL.
 - Run `image-onpage` for every referenced image. Alt text is required except for explicitly
 decorative images. Caption is optional and must not be invented merely to fill a field.
 - Run `scripts/wp_strong.py`; the shared engine converts eligible `<strong>` to `<b>` while
@@ -80,11 +89,16 @@ preserving protected heading/link cases.
 - Apply the confirmed `html_policy`: article cleanup may remove safe editor residue; builder markup is
 preserved unless the profile explicitly allows a transform.
 - Gate final H1 ownership, content, assets, unresolved tokens and transform report.
+- For AUDIT, run `skills/wp-rest-publish/scripts/wp_audit_gate.py --bundle <bundle>` and present
+  its inventory/diff with the prepared content. A rebuild may change structure only by the exact
+  delta recorded in its plan; it does not inherit the minimal-diff structural freeze.
 
 ### P3 — Approval
 
 Approval binds `publish-request.json`, prepared HTML, image manifest and transform report. Any change
 invalidates approval and returns the run to preparation.
+AUDIT additionally binds `audit-plan.json` and `audit-gate-report.json`. Re-run the audit gate before
+approval; the executor verifies that both still describe the current backup and prepared body.
 
 For multiple jobs, read [batch-approval.md](references/batch-approval.md). Gate all bundles, present
 one complete manifest/hash, and request one confirmation for the batch. Each job still receives its
@@ -95,8 +109,13 @@ reject every content type not marked `batch-ready`; never approve future or chan
 
 - NEW writes draft only to the profile endpoint.
 - AUDIT compares the fresh revision before writing.
+- AUDIT dry-runs `wp_push_audit.py`, then executes it with `--approval-hash`. That executor checks
+  approval and WordPress post ID/permalink/status/modified/raw hash before the write, again after
+  any media uploads, and verifies the complete REST body and required meta after the write.
 - Replace asset tokens only with verified WordPress media URLs.
 - GET the item with `context=edit` and compare ID, status, title, content and required meta.
+- For AUDIT, inspect the rendered public page on desktop and mobile, including images and links;
+  inspect schema when the content change affects it. REST readback does not prove public rendering.
 - A pilot records its content type and profile hash in `run-state.json`. Inspect the authenticated
   draft render and record `content`, `images`, `heading`, `links` and `seo_meta` in
   `render-report.json`; only then may `wp_profile_status.py certify` enable batch use.
@@ -112,6 +131,7 @@ reject every content type not marked `batch-ready`; never approve future or chan
 A run is complete only when its bundle and approval are current, final HTML/image gates pass,
 WordPress readback matches, NEW remains draft, AUDIT has a backup, and any configured tracker is read
 back successfully. A local dry-run is not external completion.
+An AUDIT also needs its approved mode, audit gate report and rendered-page QA before completion.
 
 Pilot completion and production readiness are separate: a successful pilot becomes `batch-ready`
 only after certification. A later profile/schema change invalidates the batch manifest and requires
@@ -123,6 +143,7 @@ reconfirmation or another pilot as appropriate.
 python3 workflows/wp-publish/scripts/wp_selftest.py
 python3 -m unittest discover -s workflows/wp-publish/tests -p 'test_*.py'
 python3 -m unittest discover -s skills/wp-publish-new/tests -p 'test_*.py'
+python3 -m unittest discover -s skills/wp-rest-publish/tests -p 'test_*.py'
 python3 -m unittest discover -s skills/wp-rest-publish/tests -p 'test_*.py'
 python3 -m unittest discover -s skills/image-onpage/tests -p 'test_*.py'
 python3 -m pytest tools/strong-to-b/test_strong_to_b.py -q

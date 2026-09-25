@@ -1,27 +1,24 @@
 #!/usr/bin/env python3
-"""B4 — Push bản mới + verify live. Chỉ chạy SAU khi apply-edits OK và operator đã gật.
+"""Legacy read-only public probe for an AUDIT update.
 
-Push: POST /posts/<id> {"content": ...}. WordPress tự lưu revision (hoàn tác được).
-KHÔNG gửi 'date' -> 'modified' tự nhảy sang hôm nay = freshness signal.
-
-Verify: fetch URL public (cache-bust) + grep các probe (câu mới PHẢI thấy, vùng khóa PHẢI còn).
+AUDIT writes now go through wp_push_audit.py with bundle approval and snapshot checks.
+This command fetches the public URL with cache-busting and checks exact probes.
 
 Usage:
   python3 wp_push_verify.py --site example-site --id 1220 --html new.html \
       --expect "Level of Detail vs LOD in Revit||LOD Specification 2025" \
       --keep "The main difference between LOD 300 and LOD 350"
-  [--credential-file PATH]  [--verify-only]  (verify-only: bỏ push, chỉ soi live)
+  [--credential-file PATH] --verify-only
 
 --expect: chuỗi câu MỚI phải xuất hiện live (ngăn bằng ||).
 --keep:   chuỗi vùng khóa phải CÒN live (ngăn bằng ||).
 """
 import argparse
-import json
 import re
 import sys
 import time
 import urllib.request
-from wp_lib import load_credential, wp_post, wp_get, _CTX
+from wp_lib import load_credential, wp_get, _CTX
 
 
 def fetch_public(url):
@@ -71,7 +68,6 @@ def main():
                          "KHONG ghi de (an le 19/08: 3 expect chi kiem 1, van bao ALL GOOD).")
     ap.add_argument("--keep", default="")
     ap.add_argument("--credential-file", "--claude-local", dest="credential_file")
-    ap.add_argument("--title", default=None, help="Optional: update the WordPress post title in the same call")
     ap.add_argument("--seo-adapter", choices=("yoast", "rankmath"),
                     help="SEO plugin used to map title and meta description")
     ap.add_argument("--seo-title", default=None, help="Optional SEO title")
@@ -86,6 +82,9 @@ def main():
                          "Bỏ qua: không assert H1 (apply-edits đã giữ nguyên số H1 bản gốc).")
     a = ap.parse_args()
 
+    if not a.verify_only:
+        sys.exit("STOP: AUDIT writes require wp_push_audit.py with bundle approval and snapshot checks")
+
     base, user, app = load_credential(a.site, credential_path=a.credential_file)
     content = open(a.html, encoding="utf-8").read()
     if a.expected_h1 is not None and h1_count(content) != a.expected_h1:
@@ -96,43 +95,16 @@ def main():
     meta_description = a.yoast_metadesc or a.meta_description
     expected_seo_meta = build_seo_meta(adapter, seo_title, meta_description)
 
-    if not a.verify_only:
-        payload = {"content": content}
-        if a.title:
-            payload["title"] = a.title
-        if expected_seo_meta:
-            payload["meta"] = expected_seo_meta
-        st, d = wp_post(base, user, app, f"{a.rest_base}/{a.id}", payload)
-        if st != 200 or "id" not in d:
-            sys.exit(f"ERR push HTTP {st}: {json.dumps(d)[:300]}")
-        print(f"PUSHED id={d['id']} modified={d.get('modified')} status={d.get('status')}")
-        # Revision ID = duong rollback duy nhat khi khong co file backup tien-dot.
-        # In ngay tai day vi moi dot deu can no cho log + cot Note cua plan sheet;
-        # truoc 20/08 phai tu goi wp_lib de dao ra, sai 4 lan moi ra (sai chu ky
-        # ham, thieu tien to duong dan, quen wp_get tra tuple).
-        try:
-            rst, rv = wp_get(base, user, app, f"{a.rest_base}/{a.id}/revisions?per_page=1&_fields=id")
-            if rst == 200 and rv:
-                print(f"REVISION {rv[0]['id']}  (rollback: khoi phuc revision truoc no)")
-            else:
-                print(f"REVISION khong doc duoc (HTTP {rst}) — tu tra truoc khi ghi log", file=sys.stderr)
-        except Exception as e:
-            print(f"REVISION khong doc duoc ({type(e).__name__}) — tu tra truoc khi ghi log", file=sys.stderr)
-        link = d.get("link")
-        time.sleep(3)
-    else:
-        # verify-only: bỏ push, chỉ lấy link để soi live
-        _, meta = wp_get(base, user, app, f"{a.rest_base}/{a.id}?_fields=link")
-        link = meta.get("link")
+    _, meta = wp_get(base, user, app, f"{a.rest_base}/{a.id}?_fields=link")
+    link = meta.get("link")
 
     # ---- verify live ----
     if not link:
-        print("WARN: không có link để verify. Bỏ qua verify."); return
+        sys.exit("VERIFY-DIFF: no public link to verify")
     html = fetch_public(link)
 
-    # Frontend là bản ĐÃ qua filter (wptexturize đổi ' thành &#8217;, theme bọc lại
-    # ranh giới thẻ), nên probe trượt ở frontend CHƯA chắc là đẩy hỏng. Lấy sẵn
-    # content.raw để đối chiếu — nguồn sự thật là đây, không phải trang public.
+    # Theme/filter có thể đổi ký tự khi render. Raw giúp chẩn đoán khác biệt,
+    # nhưng không chứng minh bản public đã cập nhật.
     raw = ""
     readback_meta = {}
     try:
@@ -143,11 +115,11 @@ def main():
         print(f"WARN: không đọc được content.raw để đối chiếu ({e})")
 
     def probe(p):
-        """(verdict, nhãn) — CHỈ FAIL khi content.raw cũng thiếu."""
+        """Return a public-render verdict; raw presence is diagnostic only."""
         if p in html:
             return True, "✓"
         if raw and p in raw:
-            return True, "✓ (raw OK — frontend đổi ký tự khi render)"
+            return False, "✗ REST raw OK; public render still unverified"
         return False, "✗ THIẾU CẢ TRÊN content.raw"
 
     ok = True

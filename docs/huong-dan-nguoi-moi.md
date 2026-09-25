@@ -356,7 +356,9 @@ bài lỗi sẽ dừng riêng và được liệt kê trong báo cáo batch.
 ## Khi nào dùng AUDIT?
 
 Chỉ dùng `AUDIT` khi bài đã tồn tại trên WordPress. Workflow phải kéo HTML hiện tại, tạo backup, trình
-phần thay đổi và chờ bạn duyệt trước khi cập nhật.
+phần thay đổi và chờ bạn duyệt trước khi cập nhật. Người làm audit chọn `MINIMAL_DIFF` khi sửa từng
+đoạn hoặc `REBUILD` khi thay body/structure; AI không tự suy mode từ URL hay độ dài bản nháp. Xem
+[luồng AUDIT chi tiết](audit-publish-flow.md) để biết các bước riêng của hai mode.
 
 ## Cấu trúc thư mục khi chạy
 
@@ -396,6 +398,9 @@ Muốn chuyển máy hoặc backup: zip cả thư mục, nhưng **xoá `.env.wp-
 
 1. NEW luôn tạo Nháp, không tự public.
 2. AUDIT luôn backup trước khi sửa.
+   AUDIT cần chọn rõ `MINIMAL_DIFF` (sửa từng đoạn) hoặc `REBUILD` (thay body theo bản đã duyệt);
+   người làm audit quyết định mode trước khi AI chuẩn bị bài. Xem
+   [luồng đăng bài AUDIT](audit-publish-flow.md).
 3. File content luôn có đúng một H1; body giữ đúng `body_h1_count` H1 đã khai báo.
 4. Không gửi mật khẩu vào Sheet, Doc hoặc GitHub.
 5. AI phải dừng xin duyệt trước khi ghi WordPress.

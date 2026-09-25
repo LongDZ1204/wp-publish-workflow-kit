@@ -7,7 +7,8 @@ contract, while Google Sheets can be enabled later as an optional tracking adapt
 It supports two routes:
 
 - `NEW`: prepare assets and HTML, bind approval to a content hash, then create exactly one draft.
-- `AUDIT`: snapshot and back up one existing item, apply the approved change, then read it back.
+- `AUDIT`: snapshot and back up one existing item, apply an explicitly approved `MINIMAL_DIFF`
+  or `REBUILD`, then read back the unchanged post ID and inspect the rendered page.
 
 The workflow keeps credentials global and gitignored, but separates each project's context, content,
 images, scans and run data. Blog, service-page and product profiles are confirmed independently.
@@ -35,6 +36,9 @@ docs/                           Setup and optional Sheet documentation
 - An Application Password stored only in the root `.env.wp-publish` with file mode `0600`
 - Content plus any referenced images; the initial adapters are Markdown, HTML and Google Doc export
 - `Pillow`, `certifi`, and `beautifulsoup4`; `pytest` for development tests
+
+For an existing article, follow [the AUDIT publishing flow](docs/audit-publish-flow.md). The
+editorial audit decides the mode and content; this kit controls the WordPress update.
 
 ## Quick start
 
