@@ -29,7 +29,7 @@ grant Administrator merely to make setup pass.
 
 ```bash
 python3 workflows/wp-publish/scripts/wp_setup_credentials.py \
-  --site-key example-site --url https://example.com --user wp-publish \
+  --site-key example-client --url https://example.com --user wp-publish \
   --input-mode dialog
 ```
 
@@ -52,7 +52,7 @@ legacy file automatically.
 
 ```bash
 python3 workflows/wp-publish/scripts/wp_site_scan.py \
-  --client example-client --site-key example-site
+  --client example-client --site-key example-client
 ```
 
 The scanner uses only `GET` and `OPTIONS`. It inventories the authenticated identity, capabilities,
@@ -80,14 +80,27 @@ Create a v2 job using [the job contract](../workflows/wp-publish/references/job-
 `source.adapter` can be `local_markdown`, `local_html` or `google_doc`; set
 `tracker.type` to `none`.
 
+Create a folder for the article and this publication attempt. Repeating the same command preserves
+existing files; a later audit of the same URL gets a new `run-id`:
+
+```bash
+python3 workflows/wp-publish/scripts/wp_scaffold_item.py \
+  --client example-client --content-type blog --slug article --run-id 2026-09-25-new-01
+```
+
 ```bash
 python3 workflows/wp-publish/scripts/wp_intake.py \
   --adapter local_html --source article.html --source-ref article.html \
-  --assets-json assets.json --out projects/example-client/content/blog/article/intake
+  --assets-json assets.json \
+  --out projects/example-client/content/blog/article/runs/2026-09-25-new-01/intake
 ```
 
-The source may originate anywhere. Intake requires a readable content snapshot and a valid asset
-inventory; downstream gates enforce the confirmed site profile.
+The source may originate anywhere. Intake stores an immutable copy; use that snapshot as the
+`wp_bundle.py lock --source` file so the bundle does not depend on an external editable source.
+Put supplied/downloaded image originals under `assets/original/<run-id>/`, prepared versions under
+`assets/prepared/<run-id>/`, and point the image manifest into that same run's `bundle/`. Images
+already on WordPress can stay as URLs without downloading. See
+[project-folders.md](../workflows/wp-publish/references/project-folders.md) for every path.
 
 ## 6. Run and certify one draft pilot
 
@@ -114,8 +127,9 @@ Then certify only that content type:
 ```bash
 python3 workflows/wp-publish/scripts/wp_profile_status.py certify \
   --context projects/example-client/publish-context.json \
-  --content-type blog --bundle projects/example-client/content/blog/example/bundle \
-  --render-report render-report.json --certified-by operator
+  --content-type blog --bundle projects/example-client/content/blog/article/runs/2026-09-25-new-01/bundle \
+  --render-report projects/example-client/content/blog/article/runs/2026-09-25-new-01/bundle/render-report.json \
+  --certified-by operator
 ```
 
 The profile is now `batch-ready`. Batch manifests bind its current hash and ask once for the exact

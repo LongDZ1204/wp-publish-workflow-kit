@@ -31,13 +31,18 @@ raw SHA-256, backup path and backup SHA-256. Keep those files private to the pro
 
 Prepare a v2 request containing the approved `update_mode`, intended title/meta, site/client,
 run/job IDs, source and exact target. The lock command copies the WordPress baseline fields from
-the fetch metadata into `publish-request.json` and binds the editorial source:
+the fetch metadata into `publish-request.json` and binds the editorial source. First copy the
+approved editorial file with `wp_intake.py` to `<item>/runs/<run-id>/intake/`; lock that immutable
+`content.snapshot.html|md` file. Store supplied or downloaded images in
+`<item>/assets/original/<run-id>/` and derivatives in `<item>/assets/prepared/<run-id>/`:
 
 ```bash
 python3 skills/wp-publish-new/scripts/wp_bundle.py lock \
-  --request '<request.json>' --source '<approved-source.html>' \
+  --request '<item>/runs/<run-id>/work/request.json' \
+  --source '<item>/runs/<run-id>/intake/content.snapshot.html' \
   --source-type local_html --source-ref '<approved-source.html>' \
-  --snapshot-meta '<snapshot>/<post-id>.meta.json' --bundle '<item>/bundle'
+  --snapshot-meta '<item>/runs/<run-id>/snapshot/<post-id>.meta.json' \
+  --bundle '<item>/runs/<run-id>/bundle'
 ```
 
 The source can also be a locked Markdown or Google Doc export. For a Google Doc, export it first,
@@ -49,12 +54,16 @@ For `MINIMAL_DIFF`, dry-run exact replacements and create the candidate body:
 
 ```bash
 python3 skills/wp-rest-publish/scripts/wp_apply_edits.py \
-  --html '<snapshot>/<post-id>.raw.html' --edits edits.json --dry-run
+  --html '<item>/runs/<run-id>/snapshot/<post-id>.raw.html' \
+  --edits '<item>/runs/<run-id>/work/edits.json' --dry-run
 python3 skills/wp-rest-publish/scripts/wp_apply_edits.py \
-  --html '<snapshot>/<post-id>.raw.html' --edits edits.json --out candidate.html
+  --html '<item>/runs/<run-id>/snapshot/<post-id>.raw.html' \
+  --edits '<item>/runs/<run-id>/work/edits.json' \
+  --out '<item>/runs/<run-id>/work/candidate.html'
 ```
 
-For `REBUILD`, `candidate.html` is the full HTML created from the approved editorial source.
+For `REBUILD`, `<item>/runs/<run-id>/work/candidate.html` is the full HTML created from the
+approved editorial source.
 Prepare images through `image-onpage`, retaining live URLs by default and uploading only new or
 approved replacement assets. Then run the shared strong-to-b transform on the candidate to
 produce `bundle/content.prepared.html` and `bundle/transform-report.json`.
@@ -86,9 +95,9 @@ Run both gates:
 
 ```bash
 python3 skills/wp-publish-new/scripts/wp_gate.py \
-  --bundle '<item>/bundle' --profile 'projects/<client>/publish-context.json' \
+  --bundle '<item>/runs/<run-id>/bundle' --profile 'projects/<client>/publish-context.json' \
   --content-type '<blog|service-page|product>' --phase prepared
-python3 skills/wp-rest-publish/scripts/wp_audit_gate.py --bundle '<item>/bundle'
+python3 skills/wp-rest-publish/scripts/wp_audit_gate.py --bundle '<item>/runs/<run-id>/bundle'
 ```
 
 The audit gate checks the backup hash, mode, H1/H2/H3/table/image/iframe deltas, frozen passages,
@@ -103,12 +112,12 @@ Only after explicit approval of those bytes:
 
 ```bash
 python3 skills/wp-publish-new/scripts/wp_bundle.py approve \
-  --bundle '<item>/bundle' --approved-by '<operator>'
+  --bundle '<item>/runs/<run-id>/bundle' --approved-by '<operator>'
 python3 skills/wp-rest-publish/scripts/wp_push_audit.py \
-  --bundle '<item>/bundle' --site-key '<site-key>' \
+  --bundle '<item>/runs/<run-id>/bundle' --site-key '<site-key>' \
   --profile 'projects/<client>/publish-context.json'
 python3 skills/wp-rest-publish/scripts/wp_push_audit.py \
-  --bundle '<item>/bundle' --site-key '<site-key>' \
+  --bundle '<item>/runs/<run-id>/bundle' --site-key '<site-key>' \
   --profile 'projects/<client>/publish-context.json' \
   --execute --approval-hash '<approved-hash>'
 ```

@@ -1,19 +1,22 @@
 # Publish bundle contract
 
-Each job has one current inspectable bundle inside its project/content-type item folder:
+Each job has one inspectable bundle at `projects/<client>/content/<type>/<slug>/runs/<run-id>/bundle/`:
 
 ```text
 bundle/
 ├── source-lock.json
+├── source.snapshot.html|md  # Google Doc only; matches export format
 ├── publish-request.json
 ├── content.prepared.html
+├── content.final.html     # after media URL resolution
 ├── image-manifest.json
 ├── transform-report.json
 ├── run-state.json
 ├── gate-report.json
 ├── audit-plan.json          # AUDIT only: selected mode and preservation/removal decisions
 ├── audit-gate-report.json   # AUDIT only: checked against the fresh raw backup
-└── approval.json
+├── approval.json
+└── render-report.json     # after manual rendered QA, when performed
 ```
 
 `publish-request.json` follows the v2 job contract. `job_id` replaces mandatory `row_id`; legacy

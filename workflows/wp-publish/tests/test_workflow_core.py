@@ -24,6 +24,7 @@ state_mod = load("wp_state")
 learn = load("wp_learn")
 sheet_io = load("wp_sheet_io")
 scaffold_mod = load("wp_scaffold_project")
+item_scaffold_mod = load("wp_scaffold_item")
 credential_setup = load("wp_setup_credentials")
 job_contract = load("wp_job_contract")
 intake_mod = load("wp_intake")
@@ -448,6 +449,39 @@ class ProjectScaffoldTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             with self.assertRaisesRegex(ValueError, "kebab-case"):
                 scaffold_mod.scaffold("Missing Client", Path(td))
+
+    def test_item_runs_are_isolated_and_non_destructive(self):
+        with tempfile.TemporaryDirectory() as td:
+            projects = Path(td) / "projects"
+            scaffold_mod.scaffold("demo-client", projects)
+            first = item_scaffold_mod.scaffold_item("demo-client", "blog", "article", "run-one", projects)
+            item = projects / "demo-client/content/blog/article"
+            self.assertTrue((item / "runs/run-one/intake").is_dir())
+            self.assertTrue((item / "runs/run-one/snapshot").is_dir())
+            self.assertTrue((item / "runs/run-one/bundle").is_dir())
+            self.assertTrue((item / "assets/original/run-one").is_dir())
+            self.assertTrue((item / "assets/prepared/run-one").is_dir())
+            self.assertTrue((item / "backups").is_dir())
+            marker = item / "runs/run-one/bundle/approval.json"
+            marker.write_text("approved", encoding="utf-8")
+            second = item_scaffold_mod.scaffold_item("demo-client", "blog", "article", "run-one", projects)
+            third = item_scaffold_mod.scaffold_item("demo-client", "blog", "article", "run-two", projects)
+            self.assertEqual(second["created"], [])
+            self.assertTrue(first["created"])
+            self.assertTrue(third["created"])
+            self.assertEqual(marker.read_text(encoding="utf-8"), "approved")
+            self.assertTrue((item / "runs/run-two/bundle").is_dir())
+
+    def test_item_scaffold_requires_project_and_valid_route(self):
+        with tempfile.TemporaryDirectory() as td:
+            projects = Path(td) / "projects"
+            with self.assertRaisesRegex(ValueError, "scaffold the project"):
+                item_scaffold_mod.scaffold_item("demo", "blog", "article", "run-one", projects)
+            scaffold_mod.scaffold("demo", projects)
+            with self.assertRaisesRegex(ValueError, "content_type"):
+                item_scaffold_mod.scaffold_item("demo", "page", "article", "run-one", projects)
+            with self.assertRaisesRegex(ValueError, "run_id"):
+                item_scaffold_mod.scaffold_item("demo", "blog", "article", "../escape", projects)
 
 
 class CredentialSetupTests(unittest.TestCase):

@@ -12,6 +12,7 @@ Components remain shared across projects:
 - `skills/image-onpage/` — prepares and validates existing images.
 - `skills/strong-to-b/` — deterministic HTML normalization.
 - `workflows/wp-publish/scripts/wp_intake.py` — immutable input snapshot.
+- `workflows/wp-publish/scripts/wp_scaffold_item.py` — one non-destructive item workspace per run.
 - `workflows/wp-publish/scripts/wp_site_scan.py` — read-only site discovery.
 - `workflows/wp-publish/scripts/wp_profile_status.py` — JIT confirmation and pilot certification.
 - `workflows/wp-publish/scripts/wp_setup_credentials.py` — optional masked credential setup.
@@ -60,6 +61,8 @@ blog pilot never enables service pages or products.
 ### P0 — Normalize and lock input
 
 - Validate with `scripts/wp_job_contract.py`.
+- Create the item run with `scripts/wp_scaffold_item.py`, using the job's `run_id`; route all
+  artifacts to the paths in [project-folders.md](references/project-folders.md).
 - If the source is a Sheet row, first use `scripts/wp_sheet_contract.py`; merge the approved
   editorial AUDIT mode into that normalized row, then validate the complete job with
   `scripts/wp_job_contract.py`. The visible Sheet does not need an Update mode column.

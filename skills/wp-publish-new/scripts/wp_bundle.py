@@ -152,7 +152,8 @@ def lock(args: argparse.Namespace) -> int:
         "source_revision": args.source_revision,
     }
     if args.source_type == "google_doc":
-        snapshot = bundle / "source.snapshot.md"
+        suffix = ".html" if source.suffix.lower() in {".html", ".htm"} else ".md"
+        snapshot = bundle / f"source.snapshot{suffix}"
         shutil.copyfile(source, snapshot)
         lock_data["snapshot"] = snapshot.name
         lock_data["snapshot_sha256"] = sha256_file(snapshot)

@@ -20,6 +20,7 @@ def main() -> int:
         WF / "references" / "brand-publish-context.md", WF / "references" / "learning-policy.md",
         WF / "references" / "project-folders.md",
         WF / "scripts" / "wp_profile_status.py",
+        WF / "scripts" / "wp_scaffold_item.py",
         ROOT / "docs" / "audit-publish-flow.md",
         ROOT / "skills" / "wp-publish-new" / "SKILL.md",
         ROOT / "skills" / "wp-rest-publish" / "SKILL.md",

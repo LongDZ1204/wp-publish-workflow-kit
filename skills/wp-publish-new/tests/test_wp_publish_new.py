@@ -33,6 +33,26 @@ class Args:
 
 
 class BundleTests(unittest.TestCase):
+    def test_google_doc_html_snapshot_keeps_html_extension(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "content.snapshot.html"
+            source.write_text("<h1>Draft</h1>", encoding="utf-8")
+            request = root / "request.json"
+            request.write_text(json.dumps({
+                "job_id": "job-one", "run_id": "run-one", "client": "demo", "site_key": "demo",
+                "task_type": "NEW", "title": "Title", "slug": "title",
+            }), encoding="utf-8")
+            bundle = root / "bundle"
+            args = Args()
+            args.bundle, args.request, args.source = str(bundle), str(request), str(source)
+            args.source_type, args.source_ref, args.source_revision = "google_doc", "doc-id", None
+            args.snapshot_meta = None
+            self.assertEqual(BUNDLE.lock(args), 0)
+            self.assertTrue((bundle / "source.snapshot.html").is_file())
+            self.assertFalse((bundle / "source.snapshot.md").exists())
+            BUNDLE.verify_source(bundle)
+
     def test_local_source_lock_approve_and_invalidate(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
