@@ -4,7 +4,10 @@ Google Sheets is not required for publishing. Use this template only after setti
 tracker to `google_sheet`; each row is normalized into the same v2 job contract used without Sheets.
 
 The kit provides a row validator and a writeback/readback contract, not a built-in Google Sheets
-network client. The running agent needs an authorized Sheets connector. Store the spreadsheet ID
+network client. The running agent needs an authorized Sheets connector. If that connector accepts a
+service-account JSON, the same root `wp-credentials.env` can store it as
+`GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON` (multiline triple-quoted JSON); the connector must be explicitly
+configured to read and use that value. Storing it alone does not authorize Sheets access. Store the spreadsheet ID
 and tab name in the project's `publish-context.json` tracker configuration, for example
 `{"type":"google_sheet","spreadsheet_id":"...","tab_name":"Blog"}`. Connectors differ by runtime;
 resolve the exact spreadsheet and tab before reading or writing rows. Never put credentials in the

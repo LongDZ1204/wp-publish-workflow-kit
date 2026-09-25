@@ -2,10 +2,10 @@
 
 ## Secrets
 
-For a new project, copy `templates/wp-publish.env.example` to the ignored
-`projects/<client>/wp-credentials.env`, fill its three values locally, and set file mode `0600`.
-The parser reads the file directly; do not source it into the shell. The shared root
-`.env.wp-publish` and temporary process variables remain compatible fallbacks.
+Copy `templates/wp-publish.env.example` once to the ignored root `wp-credentials.env`. Keep a
+site-prefixed WordPress block per project and optional Google Sheets service-account JSON in that
+single file. Set mode `0600`. The parser reads it directly; do not source it into the shell.
+Per-project files, `.env.wp-publish` and temporary process variables remain compatible fallbacks.
 `CLAUDE.local.md` is a migration fallback and should not hold new secrets because AI runtimes may
 load it as instruction context.
 Never commit Application Passwords, OAuth tokens, cookies, Google service-account JSON, or Basic Auth

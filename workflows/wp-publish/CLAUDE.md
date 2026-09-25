@@ -43,8 +43,8 @@ Before a run, read [job-contract.md](references/job-contract.md),
 ## 3. First connection and just-in-time content profiles
 
 1. Scaffold the project from `templates/project-skeleton/` with `scripts/wp_scaffold_project.py`.
-2. Point the user to `templates/wp-publish.env.example`. They copy it to
-   `projects/<client>/wp-credentials.env`, fill `WP_URL`, `WP_USER`, `WP_APP_PASS` locally, and tell
+2. Point the user to `templates/wp-publish.env.example`. They copy it once to root
+   `wp-credentials.env`, fill the site-prefixed URL, USER and APP_PASS fields locally, and tell
    you when it is ready. Do not ask them to paste the password in chat. When they report completion,
    set file mode `0600` without printing its contents.
 3. Run `scripts/wp_site_scan.py` with `site-key=<client>`; it may use only GET and OPTIONS. Check

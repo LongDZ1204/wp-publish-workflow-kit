@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Shared WordPress REST helpers with explicitly loaded local credentials.
 
-The preferred file is `projects/<site-key>/wp-credentials.env` in the ignored
-project directory. The shared root `.env.wp-publish` and `CLAUDE.local.md` remain
-read-only legacy fallbacks. Credential files are parsed, never sourced.
+The preferred file is one root `wp-credentials.env` for every site. Older
+per-project files, `.env.wp-publish` and `CLAUDE.local.md` are read-only
+compatibility fallbacks. Credential files are parsed, never sourced.
 """
 import os
 import re
@@ -17,6 +17,7 @@ import urllib.error
 
 
 PROJECTS_ROOT = Path(__file__).resolve().parents[3] / "projects"
+KIT_ROOT = PROJECTS_ROOT.parent
 
 
 def _ssl_ctx():
@@ -41,7 +42,12 @@ def _site_token(site_key):
 def parse_env_text(text):
     """Parse a small dotenv subset without expansion or shell execution."""
     values = {}
-    for number, raw in enumerate(text.splitlines(), 1):
+    lines = text.splitlines()
+    index = 0
+    while index < len(lines):
+        number = index + 1
+        raw = lines[index]
+        index += 1
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
@@ -56,7 +62,20 @@ def parse_env_text(text):
         if key in values:
             raise ValueError(f"duplicate credential key: {key}")
         value = value.strip()
-        if value.startswith('"'):
+        if value.startswith('"""'):
+            value = value[3:]
+            if value.endswith('"""'):
+                value = value[:-3]
+            else:
+                chunks = [value] if value else []
+                while index < len(lines) and lines[index].strip() != '"""':
+                    chunks.append(lines[index])
+                    index += 1
+                if index == len(lines):
+                    raise ValueError(f"unterminated multiline value on line {number}")
+                index += 1
+                value = "\n".join(chunks)
+        elif value.startswith('"'):
             try:
                 value = json.loads(value)
             except json.JSONDecodeError as exc:
@@ -67,6 +86,21 @@ def parse_env_text(text):
             value = value[1:-1]
         values[key] = value
     return values
+
+
+def google_service_account_from_env_text(text):
+    """Validate an optional shared service-account JSON, without logging its contents."""
+    raw = parse_env_text(text).get("GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON", "").strip()
+    if not raw:
+        return None
+    try:
+        info = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError("invalid Google Sheets service-account JSON") from exc
+    required = ("client_email", "private_key", "token_uri")
+    if not isinstance(info, dict) or info.get("type") != "service_account" or not all(info.get(k) for k in required):
+        raise ValueError("incomplete Google Sheets service-account JSON")
+    return info
 
 
 def credential_from_env_text(site_key, text):
@@ -121,7 +155,7 @@ def _read_env_file(path):
 
 
 def load_credential(site_key, credential_path=None, claude_local_path=None):
-    """Return (base_url, user, app_pass), preferring the current project."""
+    """Return (base_url, user, app_pass), preferring the shared root file."""
     explicit = credential_path or claude_local_path or os.environ.get("WP_CREDENTIAL_FILE")
     if explicit:
         if not os.path.isfile(explicit):
@@ -130,13 +164,20 @@ def load_credential(site_key, credential_path=None, claude_local_path=None):
             found = credential_from_legacy_text(
                 site_key, Path(explicit).expanduser().read_text(encoding="utf-8")
             )
-        elif Path(explicit).name == "wp-credentials.env":
-            found = credential_from_project_text(_read_env_file(explicit))
         else:
-            found = credential_from_env_text(site_key, _read_env_file(explicit))
+            contents = _read_env_file(explicit)
+            found = credential_from_env_text(site_key, contents)
+            if not found and "WP_URL" in parse_env_text(contents):
+                found = credential_from_project_text(contents)
         if found:
             return found
         sys.exit(f"ERR: credential file has no complete entry for '{site_key}': {explicit}")
+
+    shared_file = KIT_ROOT / "wp-credentials.env"
+    if shared_file.is_file():
+        found = credential_from_env_text(site_key, _read_env_file(shared_file))
+        if found:
+            return found
 
     if re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", str(site_key)):
         project_file = PROJECTS_ROOT / str(site_key) / "wp-credentials.env"
@@ -171,7 +212,7 @@ def load_credential(site_key, credential_path=None, claude_local_path=None):
             if found:
                 return found
     sys.exit(
-        f"ERR: không thấy credential cho '{site_key}'. Dùng projects/{site_key}/wp-credentials.env, .env.wp-publish, "
+        f"ERR: không thấy credential cho '{site_key}'. Dùng wp-credentials.env ở root, "
         "WP_CREDENTIAL_FILE hoặc WP_URL/WP_USER/WP_APP_PASS."
     )
 

@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FORBIDDEN_NAMES = {
     ".env",
     ".env.wp-publish",
+    "wp-credentials.env",
     "CLAUDE.local.md",
     "approval.json",
     "run-state.json",

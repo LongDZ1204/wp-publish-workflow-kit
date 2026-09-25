@@ -531,6 +531,35 @@ class ProjectScaffoldTests(unittest.TestCase):
 
 
 class CredentialSetupTests(unittest.TestCase):
+    def test_shared_root_file_selects_site_and_overrides_legacy_project(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            shared = root / "wp-credentials.env"
+            shared.write_text(
+                credential_setup.credential_block("first-site", "https://first.example", "one", "secret-one")
+                + credential_setup.credential_block("second-site", "https://second.example", "two", "secret-two"),
+                encoding="utf-8",
+            )
+            shared.chmod(0o600)
+            old = root / "projects" / "first-site" / "wp-credentials.env"
+            old.parent.mkdir(parents=True)
+            old.write_text('WP_URL="https://old.example"\nWP_USER="old"\nWP_APP_PASS="old"\n', encoding="utf-8")
+            old.chmod(0o600)
+            with mock.patch.object(credential_setup.WP_LIB, "KIT_ROOT", root), mock.patch.object(
+                credential_setup.WP_LIB, "PROJECTS_ROOT", root / "projects"
+            ):
+                self.assertEqual(credential_setup.WP_LIB.load_credential("first-site"), ("https://first.example", "one", "secret-one"))
+                self.assertEqual(credential_setup.WP_LIB.load_credential("second-site"), ("https://second.example", "two", "secret-two"))
+
+    def test_optional_google_service_account_multiline_json(self):
+        account = {"type": "service_account", "client_email": "bot@example.com", "private_key": "private\\nkey", "token_uri": "https://oauth.example/token"}
+        value = json.dumps(account)
+        text = 'GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON="""\n' + value + '\n"""\n'
+        self.assertEqual(credential_setup.WP_LIB.google_service_account_from_env_text(text), account)
+        self.assertIsNone(credential_setup.WP_LIB.google_service_account_from_env_text('GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON="""\n"""\n'))
+        with self.assertRaisesRegex(ValueError, "service-account JSON"):
+            credential_setup.WP_LIB.google_service_account_from_env_text('GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON="""\ninvalid\n"""\n')
+
     def test_project_file_uses_fixed_names_and_isolated_site_lookup(self):
         with tempfile.TemporaryDirectory() as td:
             projects = Path(td) / "projects"

@@ -10,7 +10,7 @@
 ## Website
 
 - [ ] Domain và `site_key` đúng.
-- [ ] User đã điền `projects/<client>/wp-credentials.env`; agent đặt quyền `0600` và xác nhận
+- [ ] User đã thêm khối key của client vào `wp-credentials.env` ở root; agent đặt quyền `0600` và xác nhận
   WordPress `users/me` trả HTTP 200 trước khi coi kết nối là hợp lệ.
 - [ ] Đã chạy site scan read-only; không dùng Administrator chỉ để vượt setup.
 - [ ] Chỉ content type user đang yêu cầu được xác nhận endpoint, field, H1 ownership và HTML policy.
