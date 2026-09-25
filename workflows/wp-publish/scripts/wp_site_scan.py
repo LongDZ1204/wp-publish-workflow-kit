@@ -80,6 +80,8 @@ def build_scan(
         return status, payload
 
     me_status, me = fetch("GET", "users/me?context=edit")
+    if me_status != 200 or not isinstance(me, dict) or not me.get("id"):
+        raise ValueError(f"WordPress credential check failed: users/me HTTP {me_status}")
     types_status, types = fetch("GET", "types?context=edit")
     tax_status, taxonomies = fetch("GET", "taxonomies?context=edit")
     if not isinstance(me, dict):

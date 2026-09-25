@@ -4,7 +4,7 @@
 Usage:
   python3 wp_fetch.py --site example-site --slug bim-level-of-development --out DIR
   python3 wp_fetch.py --site example-site --id 1220 --out DIR
-  [--credential-file /path/to/.env.wp-publish]  [--backup /path/to/item/backups]
+  [--credential-file /path/to/wp-credentials.env]  [--backup /path/to/item/backups]
 
 Xuất ra DIR: <slug|id>.raw.html (content.raw) + <slug|id>.meta.json (id, modified, link, title).
 Nếu --backup có, copy thêm 1 bản .raw.html vào đó (timestamp do người gọi tự đặt tên trước).
@@ -20,7 +20,7 @@ from wp_lib import load_credential, wp_get, detect_format
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--site", required=True, help="site key khớp prefix trong .env.wp-publish")
+    ap.add_argument("--site", required=True, help="site key khớp tên project; legacy root env dùng prefix site")
     ap.add_argument("--slug")
     ap.add_argument("--id")
     ap.add_argument("--out", required=True, help="thư mục xuất")

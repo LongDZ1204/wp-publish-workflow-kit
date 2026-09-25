@@ -20,9 +20,10 @@ bài đó. Mặc định tạo user riêng role Editor; không dùng Administrat
 `edit_others_posts` và `edit_published_posts`, đủ cho NEW draft + AUDIT bài hiện có. HTTP 200 ở
 `context=edit` = auth OK.
 
-Credential nằm trong `.env.wp-publish` theo `templates/wp-publish.env.example`; script
-`wp_setup_credentials.py` kiểm tra role/capability và ghi file mode `0600`. Parser đọc trực tiếp,
-không `source` vào shell. Agent không nhận password qua chat.
+Credential mới nằm trong `projects/<client>/wp-credentials.env`, là bản sao của
+`templates/wp-publish.env.example`. User tự điền ba giá trị rồi báo agent kiểm tra. Agent đặt file
+mode `0600` và chạy `wp_site_scan.py` read-only; parser đọc trực tiếp, không `source` vào shell.
+Root `.env.wp-publish` vẫn là fallback cho bản cài cũ. Agent không nhận password qua chat.
 
 ## `modified`, revision, `date`
 

@@ -143,6 +143,15 @@ class IntakeTests(unittest.TestCase):
 
 
 class SiteScanTests(unittest.TestCase):
+    def test_scan_rejects_invalid_wordpress_key(self):
+        def requester(method, url, user, app_pass):
+            if "users/me" in url:
+                return 401, {"code": "rest_not_logged_in"}
+            return 200, {}
+
+        with self.assertRaisesRegex(ValueError, "WordPress credential check failed"):
+            site_scan.build_scan("https://example.com", "editor", "wrong", requester)
+
     def test_scan_is_read_only_and_builds_profiles(self):
         calls = []
 
@@ -522,6 +531,34 @@ class ProjectScaffoldTests(unittest.TestCase):
 
 
 class CredentialSetupTests(unittest.TestCase):
+    def test_project_file_uses_fixed_names_and_isolated_site_lookup(self):
+        with tempfile.TemporaryDirectory() as td:
+            projects = Path(td) / "projects"
+            for site, url in (("first-site", "https://first.example"), ("second-site", "https://second.example")):
+                folder = projects / site
+                folder.mkdir(parents=True)
+                path = folder / "wp-credentials.env"
+                path.write_text(
+                    f'WP_URL="{url}"\nWP_USER="editor"\nWP_APP_PASS="secret"\n',
+                    encoding="utf-8",
+                )
+                path.chmod(0o600)
+            with mock.patch.object(credential_setup.WP_LIB, "PROJECTS_ROOT", projects):
+                self.assertEqual(
+                    credential_setup.WP_LIB.load_credential("first-site"),
+                    ("https://first.example", "editor", "secret"),
+                )
+                self.assertEqual(
+                    credential_setup.WP_LIB.load_credential("second-site"),
+                    ("https://second.example", "editor", "secret"),
+                )
+
+    def test_project_file_requires_all_three_values(self):
+        with self.assertRaisesRegex(ValueError, "incomplete project credential"):
+            credential_setup.WP_LIB.credential_from_project_text(
+                'WP_URL="https://example.com"\nWP_USER="editor"\n'
+            )
+
     def test_https_and_kebab_case_are_required(self):
         self.assertEqual(
             credential_setup.validate_inputs("demo-site", "https://example.com/", "wp-publish"),
